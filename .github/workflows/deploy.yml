@@ -26,15 +26,15 @@ jobs:
         with:
           python-version: ${{ env.PY_VERSION }}
 
-    - name: Restore profiles.yaml (if provided)
-      run: |
-        if [ -n "${{ secrets.PROFILES_YAML_B64 }}" ]; then
-          mkdir -p configs
-          echo "${{ secrets.PROFILES_YAML_B64 }}" | base64 -d > configs/profiles.yaml
-          echo "profiles.yaml restored from secret."
-        else
-          echo "No PROFILES_YAML_B64 secret set; skipping profiles restore."
-        fi
+      - name: Restore profiles.yaml (if provided)
+        run: |
+          if [ -n "${{ secrets.PROFILES_YAML_B64 }}" ]; then
+            mkdir -p configs
+            echo "${{ secrets.PROFILES_YAML_B64 }}" | base64 -d > configs/profiles.yaml
+            echo "profiles.yaml restored from secret."
+          else
+            echo "No PROFILES_YAML_B64 secret set; skipping profiles restore."
+          fi
 
       - name: Build Lambda package
         run: |
@@ -48,7 +48,7 @@ jobs:
           pip install -r requirements.txt -t build
           # copy code + configs
           rsync -a src/ build/
-          rsync -a configs/ build/configs/
+          rsync -a configs/ build/configs/ || true
           mkdir -p build/data
           cd build && zip -r ../package.zip .
 
@@ -58,7 +58,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Create/Update Lambda
+      - name: Create or Update Lambda
         shell: bash
         run: |
           set -e
