@@ -1,0 +1,88 @@
+name: Deploy Lambda
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  FUNCTION_NAME: goblin-bot
+  PY_VERSION: "3.12"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PY_VERSION }}
+
+      - name: Restore profiles.yaml (if provided)
+        if: ${{ secrets.PROFILES_YAML_B64 != '' }}
+        run: |
+          mkdir -p configs
+          echo "${{ secrets.PROFILES_YAML_B64 }}" | base64 -d > configs/profiles.yaml
+
+      - name: Build Lambda package
+        run: |
+          set -e
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          rm -rf build && mkdir -p build
+          # vendor deps
+          pip install -r requirements.txt -t build
+          # copy code + configs
+          rsync -a src/ build/
+          rsync -a configs/ build/configs/
+          mkdir -p build/data
+          cd build && zip -r ../package.zip .
+
+      - name: Configure AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Create/Update Lambda
+        shell: bash
+        run: |
+          set -e
+          RUNTIME="python${{ env.PY_VERSION }}"
+          HANDLER="goblin/handler.lambda_handler"
+
+          if aws lambda get-function --function-name "${{ env.FUNCTION_NAME }}" >/dev/null 2>&1; then
+            echo "Updating code for ${{ env.FUNCTION_NAME }}"
+            aws lambda update-function-code \
+              --function-name "${{ env.FUNCTION_NAME }}" \
+              --zip-file fileb://package.zip >/dev/null
+          else
+            echo "Creating ${{ env.FUNCTION_NAME }}"
+            aws lambda create-function \
+              --function-name "${{ env.FUNCTION_NAME }}" \
+              --runtime "$RUNTIME" \
+              --role "${{ secrets.AWS_LAMBDA_ROLE_ARN }}" \
+              --handler "$HANDLER" \
+              --timeout 30 \
+              --memory-size 512 \
+              --zip-file fileb://package.zip >/dev/null
+          fi
+
+      - name: Update environment variables
+        run: |
+          aws lambda update-function-configuration \
+            --function-name "${{ env.FUNCTION_NAME }}" \
+            --environment "Variables={GOBLIN_SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}}"
+
+      - name: Publish version (optional)
+        run: aws lambda publish-version --function-name "${{ env.FUNCTION_NAME }}" >/dev/null
