@@ -18,11 +18,13 @@ async def post_to_slack(text: str):
         if not data.get("ok"):
             raise RuntimeError(f"Slack API error: {data}")
 
-def job_to_blocks(job: Job) -> List[Dict]:
+def job_to_blocks(job, score: float | None = None):
+    line2 = f"{job.location}  ·  _{job.source}_"
+    if score is not None:
+        line2 = f"Score: *{score:.1f}*  ·  {line2}"
     return [
-        {"type": "header", "text": {"type": "plain_text", "text": "Goblin: new match"}},
-        {"type": "section", "text": {"type": "mrkdwn",
-         "text": f"*<{job.url}|{job.title}>*  ·  {job.company}\n{job.location}  ·  _{job.source}_"}},
+        {"type":"section","text":{"type":"mrkdwn",
+         "text": f"*<{job.url}|{job.title}>*  ·  {job.company}\n{line2}"}}
     ]
 
 async def post_blocks(blocks: List[Dict], text: str = "New jobs"):

@@ -2,7 +2,9 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.venv
 .env
+data/
 .venv/
 .envrc
 .DS_Store

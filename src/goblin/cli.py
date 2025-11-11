@@ -5,6 +5,7 @@ import click
 from goblin.slack import post_blocks, job_to_blocks
 from goblin.filters import load_filters, matches
 from goblin.fetch import fetch_stub
+from goblin.dedup import load_seen, save_seen, fingerprint
 
 def require_env(var):
     v = os.environ.get(var)
@@ -28,7 +29,9 @@ def find(source, limit, dry_run):
     from goblin.fetch import fetch_stub
     from goblin.collectors.remotive import fetch_remotive
     from goblin.slack import post_blocks, job_to_blocks
-    import asyncio, sys, click, os
+    from goblin.rank import load_weights, score as score_job
+    from goblin.dedup import load_seen, save_seen, fingerprint
+    import asyncio, click
 
     filters = load_filters()
 
@@ -40,30 +43,44 @@ def find(source, limit, dry_run):
         jobs = fetch_stub()
 
     matched = [j for j in jobs if matches(j, filters)]
-    click.echo(f"[INFO] fetched={len(jobs)} matched={len(matched)}")
+
+    weights = load_weights()
+    scored = [(score_job(j, filters, weights), j) for j in matched]
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    # dedup against scored list
+    seen = load_seen()
+    new = []
+    for s, j in scored:
+        fp = fingerprint(j.title, j.company, j.url)
+        if fp not in seen:
+            new.append((s, j))
+
+    click.echo(f"[INFO] new={len(new)} already_posted={len(scored) - len(new)}")
 
     if dry_run:
-        for j in matched:
-            click.echo(f" - {j.title} · {j.company} · {j.location}")
+        for s, j in new:
+            click.echo(f"{s:>4.1f}  {j.title} · {j.company} · {j.location}")
         return
 
-    if not matched:
-        click.echo("[INFO] no matches to post")
+    if not new:
+        click.echo("[INFO] nothing new to post")
         return
 
-    # build Slack blocks
-    blocks = [{"type": "header", "text": {"type": "plain_text", "text": f"Goblin: {source} matches"}}]
-    for j in matched:
-        blocks.extend(job_to_blocks(j))
-        blocks.append({"type": "divider"})
+    # build blocks from `new` not `matched`
+    blocks = [{"type":"header","text":{"type":"plain_text","text":f"Goblin: {source} matches"}}]
+    for s, j in new:
+        blocks.extend(job_to_blocks(j, s))
+        blocks.append({"type":"divider"})
 
     # post
-    try:
-        asyncio.run(post_blocks(blocks, text=f"Goblin {source} update"))
-        click.echo(f"[OK] Posted {len(matched)} match(es) from {source}")
-    except Exception as e:
-        click.echo(f"[ERROR] Slack post failed: {e}", err=True)
-        sys.exit(2)
+    asyncio.run(post_blocks(blocks, text=f"Goblin {source} update"))
+    click.echo(f"[OK] Posted {len(new)} new match(es) from {source}")
+
+    # remember what we posted
+    for _, j in new:
+        seen.add(fingerprint(j.title, j.company, j.url))
+    save_seen(seen)
 
 @cli.command(name="pull-remotive")
 @click.option("--q", "query", default="", help="Search query")
@@ -81,6 +98,23 @@ def pull_remotive(query, category, limit):
     for j in matched:
         click.echo(f" - {j.title} · {j.company} · {j.location}")
 
+@cli.command(name="score-remotive")
+@click.option("--limit", default=10, show_default=True)
+def score_remotive(limit):
+    """Fetch Remotive, score matches, print top results (no posting)."""
+    from goblin.collectors.remotive import fetch_remotive
+    from goblin.filters import load_filters, matches
+    from goblin.rank import load_weights, score
+
+    filters = load_filters()
+    weights = load_weights()
+    jobs = [j for j in fetch_remotive(category="software-dev", limit=limit) if matches(j, filters)]
+    scored = [(score(j, filters, weights), j) for j in jobs]
+    scored.sort(reverse=True, key=lambda x: x[0])
+
+    click.echo(f"[INFO] matched={len(scored)}")
+    for s, j in scored:
+        click.echo(f"{s:>4.1f}  {j.title} · {j.company} · {j.location}")
 
 if __name__ == "__main__":
     cli()
