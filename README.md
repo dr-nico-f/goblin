@@ -120,7 +120,7 @@ Planned features:
 
 ## 📜 License
 MIT © 2025 — Goblin Labs  
-Created by [Your Name](https://github.com/dr-nico-f)
+Created by [Nico](https://github.com/dr-nico-f)
 
 ---
 
