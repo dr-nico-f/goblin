@@ -1,12 +1,6 @@
 titles:
-  include:
-    - Software Engineer
-    - Backend
-    - Platform
-  exclude:
-    - Staff
-    - Principal
-    - Intern
+  include: ["Engineer", "Developer", "Software", "Data", "DevOps", "ML", "Integration", "Backend", "Python"]
+  exclude: ["Intern", "Staff", "Principal"]
 
 keywords:
   include:

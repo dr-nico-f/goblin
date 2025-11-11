@@ -1,11 +1,17 @@
-import os
-import sys
-import asyncio
-import click
+import asyncio, click, os
+from dotenv import load_dotenv
+from goblin.util.log import setup_logging
 from goblin.slack import post_blocks, job_to_blocks
 from goblin.filters import load_filters, matches
 from goblin.fetch import fetch_stub
 from goblin.dedup import load_seen, save_seen, fingerprint
+
+
+# Load .env before anything else
+load_dotenv()
+
+# Initialize rotating logger
+log = setup_logging()
 
 def require_env(var):
     v = os.environ.get(var)
@@ -35,6 +41,7 @@ def find(source, limit, dry_run):
 
     filters = load_filters()
 
+    log.info("source=%s limit=%s", source, limit)
     if source == "remotive":
         click.echo(f"[INFO] fetching Remotive (limit={limit})")
         jobs = fetch_remotive(category="software-dev", limit=limit)
@@ -43,6 +50,7 @@ def find(source, limit, dry_run):
         jobs = fetch_stub()
 
     matched = [j for j in jobs if matches(j, filters)]
+    log.info("fetched=%d matched=%d", len(jobs), len(matched))
 
     weights = load_weights()
     scored = [(score_job(j, filters, weights), j) for j in matched]
@@ -57,6 +65,7 @@ def find(source, limit, dry_run):
             new.append((s, j))
 
     click.echo(f"[INFO] new={len(new)} already_posted={len(scored) - len(new)}")
+    log.info("new=%d already_posted=%d", len(new), len(scored) - len(new))
 
     if dry_run:
         for s, j in new:
@@ -74,8 +83,13 @@ def find(source, limit, dry_run):
         blocks.append({"type":"divider"})
 
     # post
-    asyncio.run(post_blocks(blocks, text=f"Goblin {source} update"))
-    click.echo(f"[OK] Posted {len(new)} new match(es) from {source}")
+    try:
+        asyncio.run(post_blocks(blocks, text=f"Goblin {source} update"))
+        click.echo(f"[OK] Posted {len(new)} new match(es) from {source}")
+        log.info("posted=%d new matches from %s", len(new), source)
+    except Exception as e:
+        log.exception("Slack post failed: %s", e)
+        raise
 
     # remember what we posted
     for _, j in new:
