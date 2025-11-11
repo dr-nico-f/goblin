@@ -37,16 +37,30 @@ def find(source, limit, dry_run):
     from goblin.slack import post_blocks, job_to_blocks
     from goblin.rank import load_weights, score as score_job
     from goblin.dedup import load_seen, save_seen, fingerprint
+    from goblin.config import load_sources
     import asyncio, click
 
     filters = load_filters()
 
     log.info("source=%s limit=%s", source, limit)
+    sources_cfg = load_sources().get("sources", {})
+    cfg = sources_cfg.get(source, {})
+    limit = cfg.get("limit", limit)
+
     if source == "remotive":
-        click.echo(f"[INFO] fetching Remotive (limit={limit})")
-        jobs = fetch_remotive(category="software-dev", limit=limit)
+        if not cfg.get("enabled", True):
+            click.echo("[INFO] Remotive source disabled in config.")
+            return
+        category = cfg.get("category", "software-dev")
+        query = cfg.get("query", "")
+        click.echo(f"[INFO] fetching Remotive (limit={limit}, category={category}, query='{query}')")
+        log.info("source=%s limit=%s category=%s query=%s", source, limit, category, query)
+        jobs = fetch_remotive(category=category, query=query, limit=limit)
     else:
-        click.echo("[INFO] using stub source")
+        if not cfg.get("enabled", True):
+            click.echo("[INFO] Stub source disabled in config.")
+            return
+        click.echo(f"[INFO] using stub source (limit={limit})")
         jobs = fetch_stub()
 
     matched = [j for j in jobs if matches(j, filters)]
@@ -129,6 +143,27 @@ def score_remotive(limit):
     click.echo(f"[INFO] matched={len(scored)}")
     for s, j in scored:
         click.echo(f"{s:>4.1f}  {j.title} · {j.company} · {j.location}")
+
+@cli.command()
+@click.option("--message", default="Goblin test ✅", show_default=True)
+def test(message):
+    """Post a simple health-check message and one fake job card to Slack."""
+    import asyncio
+    from goblin.model import Job
+    from goblin.slack import post_blocks, job_to_blocks
+
+    j = Job(
+        id="healthcheck-1",
+        title="Health Check: Backend Engineer (Python/AWS)",
+        company="Goblin Labs",
+        location="Remote — Anywhere",
+        url="https://example.com/healthcheck",
+        source="test",
+    )
+    blocks = [{"type":"header","text":{"type":"plain_text","text":message}}]
+    blocks += job_to_blocks(j, 9.9)  # show score if your job_to_blocks supports it
+    asyncio.run(post_blocks(blocks, text=message))
+    click.echo("[OK] Test post sent.")
 
 if __name__ == "__main__":
     cli()

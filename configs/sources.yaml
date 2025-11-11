@@ -1,0 +1,9 @@
+sources:
+  remotive:
+    enabled: true
+    category: software-dev
+    limit: 25
+    query: ""
+  stub:
+    enabled: false
+    limit: 3
