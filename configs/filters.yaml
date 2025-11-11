@@ -1,0 +1,32 @@
+titles:
+  include:
+    - Software Engineer
+    - Backend
+    - Platform
+  exclude:
+    - Staff
+    - Principal
+    - Intern
+
+keywords:
+  include:
+    - python
+    - aws
+    - lambda
+  exclude:
+    - php
+    - cobol
+
+locations:
+  include:
+    - Remote
+    - Anywhere
+    - Worldwide
+    - USA
+    - United States
+    - Americas
+    - Europe
+    - UK
+    - Canada
+  exclude:
+    - Onsite Only
