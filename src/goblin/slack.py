@@ -27,9 +27,9 @@ def job_to_blocks(job, score: float | None = None):
          "text": f"*<{job.url}|{job.title}>*  ·  {job.company}\n{line2}"}}
     ]
 
-async def post_blocks(blocks: List[Dict], text: str = "New jobs"):
+async def post_blocks(blocks: List[Dict], text: str = "New jobs", channel_override: str | None = None):
     token = os.environ.get("GOBLIN_SLACK_BOT_TOKEN")
-    channel = os.environ.get("GOBLIN_SLACK_CHANNEL")
+    channel = channel_override or os.environ.get("GOBLIN_SLACK_CHANNEL")
     if not (token and channel):
         raise RuntimeError("Missing Slack env vars.")
     async with httpx.AsyncClient(timeout=10) as client:

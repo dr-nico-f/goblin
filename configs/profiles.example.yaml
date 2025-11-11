@@ -1,0 +1,10 @@
+profiles:
+  bob:
+    channel: "Cxxxxxxxxxx"   # a Slack channel ID
+    filters: "configs/filters_bob.yaml"
+    ranking: "configs/ranking_bob.yaml"
+
+  susan:
+    channel: "Cyyyyyyyyyy"   # another Slack channel ID
+    filters: "configs/filters_susan.yaml"
+    ranking: "configs/ranking_susan.yaml"
