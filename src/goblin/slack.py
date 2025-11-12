@@ -14,6 +14,7 @@ async def post_to_slack(text: str):
                      "Content-Type": "application/json; charset=utf-8"},
             json={"channel": channel, "text": text},
         )
+        r.raise_for_status()
         data = r.json()
         if not data.get("ok"):
             raise RuntimeError(f"Slack API error: {data}")
@@ -57,6 +58,7 @@ async def post_blocks(blocks: List[Dict], text: str = "New jobs", channel_overri
                      "Content-Type": "application/json; charset=utf-8"},
             json={"channel": channel, "text": text, "blocks": blocks},
         )
+        r.raise_for_status()
         data = r.json()
         if not data.get("ok"):
             raise RuntimeError(f"Slack API error: {data}")
