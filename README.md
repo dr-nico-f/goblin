@@ -14,6 +14,7 @@ Built with **Python 3.10+**, **AWS**, and the **Slack API**.
 - 🪵 Rotating log files for all runs
 - 🔐 `.env`-based secrets loading (no manual exports)
 - 🧪 Health-check command to verify Slack connectivity
+- 🧾 Rich Slack cards (job type, salary, publish date, tags when available)
 - 🏗️ Modular design ready for AWS Lambda + EventBridge automation
 
 ---
@@ -55,6 +56,11 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+*(Optional)* Install the package in editable mode so you can skip setting `PYTHONPATH` for every command:
+```bash
+pip install -e src
+```
+
 ### 2. Environment variables  
 Create a file named `.env` in the project root:
 ```
@@ -82,6 +88,9 @@ PYTHONPATH=$PWD/src python -m goblin.cli find --source remotive
 ```bash
 PYTHONPATH=$PWD/src python -m goblin.cli test
 ```
+
+Tip: override the default fetch limit for an ad-hoc run with `--limit`, e.g. `--limit 5`.
+If you installed with `pip install -e src`, you can omit the `PYTHONPATH=$PWD/src` prefix in the examples above.
 
 ### Logs
 All runs are logged to `logs/goblin.log`.
