@@ -24,6 +24,8 @@ def job_to_blocks(job, score: float | None = None):
         line2 = f"Score: *{score:.1f}*  ·  {line2}"
 
     meta: list[str] = []
+    if getattr(job, "category", None):
+        meta.append(job.category)
     if getattr(job, "job_type", None):
         meta.append(job.job_type)
     if getattr(job, "salary", None):

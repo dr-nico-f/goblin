@@ -9,6 +9,7 @@ class Job:
     location: str
     url: str
     source: str = "stub"
+    category: Optional[str] = None
     description: Optional[str] = None
     tags: List[str] = field(default_factory=list)
     salary: Optional[str] = None

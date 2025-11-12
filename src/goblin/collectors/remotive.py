@@ -46,6 +46,7 @@ def fetch_remotive(query: str = "", category: str = "software-dev", limit: int =
                 location=(item.get("candidate_required_location") or "Remote").strip(),
                 url=(item.get("url") or "").strip(),
                 source="remotive",
+                category=((item.get("category") or "").strip() or None),
                 description=description or None,
                 tags=tags,
                 salary=((item.get("salary") or "").strip() or None),
