@@ -44,9 +44,9 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
           rm -rf build && mkdir -p build
-          # vendor deps
+          # vendor deps into build/
           pip install -r requirements.txt -t build
-          # copy code + configs
+          # copy app code + configs
           rsync -a src/ build/
           rsync -a configs/ build/configs/ || true
           mkdir -p build/data
@@ -58,48 +58,52 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Verify OIDC and env
-        run: |
-          set -e
-          echo "Region=${{ secrets.AWS_REGION }}"
-          aws sts get-caller-identity
-          ls -lh package.zip || (echo "package.zip missing"; exit 1)
-
-      - name: Enable CLI debug (temp)
-        run: |
-          echo "AWS CLI version:" && aws --version
-          echo "Listing Lambda (expect either 0 or some):"
-          aws lambda list-functions --max-items 5 || true
-
-      - name: Create or Update Lambda
+      - name: Create/Update Lambda (with waits)
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
+          FN="${{ env.FUNCTION_NAME }}"
           RUNTIME="python${{ env.PY_VERSION }}"
           HANDLER="goblin/handler.lambda_handler"
 
-          if aws lambda get-function --function-name "${{ env.FUNCTION_NAME }}" >/dev/null 2>&1; then
-            echo "Updating code for ${{ env.FUNCTION_NAME }}"
+          echo "Verifying package.zip exists..."
+          ls -lh package.zip
+
+          echo "Checking if function exists..."
+          if aws lambda get-function --function-name "$FN" >/dev/null 2>&1; then
+            echo "Updating code for $FN"
             aws lambda update-function-code \
-              --function-name "${{ env.FUNCTION_NAME }}" \
-              --zip-file fileb://package.zip >/dev/null
+              --function-name "$FN" \
+              --zip-file fileb://package.zip
           else
-            echo "Creating ${{ env.FUNCTION_NAME }}"
+            echo "Creating $FN"
             aws lambda create-function \
-              --function-name "${{ env.FUNCTION_NAME }}" \
+              --function-name "$FN" \
               --runtime "$RUNTIME" \
               --role "${{ secrets.AWS_LAMBDA_ROLE_ARN }}" \
               --handler "$HANDLER" \
               --timeout 30 \
               --memory-size 512 \
-              --zip-file fileb://package.zip >/dev/null
+              --zip-file fileb://package.zip
           fi
 
-      - name: Update environment variables
-        run: |
+          echo "Waiting for function to become stable..."
+          aws lambda wait function-updated --function-name "$FN"
+
+          echo "Updating environment variables..."
           aws lambda update-function-configuration \
-            --function-name "${{ env.FUNCTION_NAME }}" \
+            --function-name "$FN" \
             --environment "Variables={GOBLIN_SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}}"
 
-      - name: Publish version (optional)
-        run: aws lambda publish-version --function-name "${{ env.FUNCTION_NAME }}" >/dev/null
+          echo "Waiting again for function to become stable..."
+          aws lambda wait function-updated --function-name "$FN"
+
+          echo "Publishing version..."
+          aws lambda publish-version --function-name "$FN" >/dev/null
+
+      - name: Show deployed function summary
+        run: |
+          aws lambda get-function \
+            --function-name "${{ env.FUNCTION_NAME }}" \
+            --query '{FunctionName:Configuration.FunctionName,Runtime:Configuration.Runtime,LastModified:Configuration.LastModified,Role:Configuration.Role}' \
+            --output json
