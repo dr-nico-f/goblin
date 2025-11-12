@@ -1,12 +1,28 @@
 titles:
-  include: ["Engineer", "Developer", "Software", "Data", "DevOps", "ML", "Integration", "Backend", "Python"]
-  exclude: ["Intern", "Staff", "Principal"]
+  include: ["Engineer", "Developer", "Software", "Data", "DevOps", "ML", "Integration", "Integrations", "Backend", "Python", "AI", "Senior", "Architect", "Solutions", "Solution", "Technical"]
+  exclude: ["Intern", "Junior"]
 
 keywords:
   include:
     - python
     - aws
     - lambda
+    - ai
+    - ml
+    - integration
+    - integrations
+    - backend
+    - python
+    - senior
+    - architect
+    - solutions
+    - solution
+    - technical
+    - developer
+    - engineer
+    - data
+    - devops
+
   exclude:
     - php
     - cobol
@@ -19,8 +35,6 @@ locations:
     - USA
     - United States
     - Americas
-    - Europe
-    - UK
-    - Canada
   exclude:
     - Onsite Only
+    - Europe
