@@ -35,7 +35,7 @@ def find(source, limit, dry_run, profile):
     from goblin.profiles import get_profile
     from goblin.filters import load_filters, matches
     from goblin.rank import load_weights, score as score_job
-    from goblin.dedup import load_seen, save_seen, fingerprint
+    from goblin.dedup import load_seen, save_seen, fingerprint, cache_file
     from goblin.collectors.remotive import fetch_remotive
     from goblin.fetch import fetch_stub
     from goblin.slack import post_blocks, job_to_blocks
@@ -49,7 +49,7 @@ def find(source, limit, dry_run, profile):
     filt_path   = prof.get("filters", "configs/filters.yaml")
     rank_path   = prof.get("ranking", "configs/ranking.yaml")
     channel_id  = prof.get("channel")  # required
-    cache_path  = os.path.join("data", profile, "posted.json")
+    cache_path = cache_file(profile)   # was os.path.join("data", profile, "posted.json")
 
     sources_cfg = load_sources().get("sources", {})
     cfg = sources_cfg.get(source, {})

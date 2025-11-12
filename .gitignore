@@ -16,3 +16,4 @@ build/
 *.egg-info/
 logs/
 configs/profiles.yaml
+out.json

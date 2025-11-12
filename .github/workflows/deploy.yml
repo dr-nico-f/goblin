@@ -90,10 +90,10 @@ jobs:
           echo "Waiting for function to become stable..."
           aws lambda wait function-updated --function-name "$FN"
 
-          echo "Updating environment variables..."
+          echo "Updating environment variables (incl. cache dir)..."
           aws lambda update-function-configuration \
             --function-name "$FN" \
-            --environment "Variables={GOBLIN_SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }}}"
+            --environment "Variables={GOBLIN_SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }},GOBLIN_CACHE_DIR=/tmp/goblin}"
 
           echo "Waiting again for function to become stable..."
           aws lambda wait function-updated --function-name "$FN"
@@ -105,5 +105,5 @@ jobs:
         run: |
           aws lambda get-function \
             --function-name "${{ env.FUNCTION_NAME }}" \
-            --query '{FunctionName:Configuration.FunctionName,Runtime:Configuration.Runtime,LastModified:Configuration.LastModified,Role:Configuration.Role}' \
+            --query '{FunctionName:Configuration.FunctionName,Runtime:Configuration.Runtime,LastModified:Configuration.LastModified,Role:Configuration.Role,Env:Configuration.Environment}' \
             --output json

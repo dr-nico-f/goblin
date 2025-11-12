@@ -12,7 +12,7 @@ from goblin.config import load_sources
 from goblin.profiles import get_profile
 from goblin.filters import load_filters, matches
 from goblin.rank import load_weights, score as score_job
-from goblin.dedup import load_seen, save_seen, fingerprint
+from goblin.dedup import load_seen, save_seen, fingerprint, cache_file
 from goblin.slack import post_blocks, job_to_blocks
 from goblin.collectors.remotive import fetch_remotive
 from goblin.fetch import fetch_stub
@@ -41,7 +41,7 @@ def lambda_handler(event, context):
     # Per-profile config paths + cache path
     filt_path  = prof.get("filters", "configs/filters.yaml")
     rank_path  = prof.get("ranking", "configs/ranking.yaml")
-    cache_path = os.path.join("data", profile, "posted.json")
+    cache_path = cache_file(profile)
 
     # Source & defaults (from sources.yaml), allow event overrides
     source = event.get("source", "remotive")
