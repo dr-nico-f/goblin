@@ -1,4 +1,4 @@
-import asyncio, click, os
+import asyncio, click, os, sys
 from dotenv import load_dotenv
 from goblin.util.log import setup_logging
 from goblin.slack import post_blocks, job_to_blocks
@@ -25,9 +25,11 @@ def cli():
     """Goblin command-line interface."""
     pass
 
+DEFAULT_LIMIT = 10
+
 @cli.command()
 @click.option("--source", default="stub", type=click.Choice(["stub","remotive"]), show_default=True)
-@click.option("--limit", default=10, show_default=True)
+@click.option("--limit", type=int, default=None, help=f"Max jobs to fetch (falls back to config or {DEFAULT_LIMIT})")
 @click.option("--dry-run", is_flag=True)
 @click.option("--profile", default="nick", show_default=True, help="Profile name from configs/profiles.yaml")
 def find(source, limit, dry_run, profile):
@@ -49,11 +51,14 @@ def find(source, limit, dry_run, profile):
     filt_path   = prof.get("filters", "configs/filters.yaml")
     rank_path   = prof.get("ranking", "configs/ranking.yaml")
     channel_id  = prof.get("channel")  # required
+    if not channel_id:
+        click.echo(f"[ERROR] profile '{profile}' missing 'channel' in configs/profiles.yaml"); return
     cache_path = cache_file(profile)   # was os.path.join("data", profile, "posted.json")
 
     sources_cfg = load_sources().get("sources", {})
     cfg = sources_cfg.get(source, {})
-    limit = cfg.get("limit", limit)
+    cfg_limit = cfg.get("limit", DEFAULT_LIMIT)
+    limit = limit if limit is not None else cfg_limit
 
     log.info("profile=%s channel=%s source=%s limit=%s", profile, channel_id, source, limit)
 

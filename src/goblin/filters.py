@@ -7,12 +7,16 @@ def load_filters(path="configs/filters.yaml") -> dict:
         return yaml.safe_load(f) or {}
 
 def matches(job: Job, filters: dict) -> bool:
-    ti = [t.lower() for t in filters["titles"]["include"]]
-    te = [t.lower() for t in filters["titles"]["exclude"]]
-    ki = [k.lower() for k in filters["keywords"]["include"]]
-    ke = [k.lower() for k in filters["keywords"]["exclude"]]
-    li = [l.lower() for l in filters["locations"]["include"]]
-    le = [l.lower() for l in filters["locations"]["exclude"]]
+    titles_cfg = filters.get("titles", {}) or {}
+    keywords_cfg = filters.get("keywords", {}) or {}
+    locations_cfg = filters.get("locations", {}) or {}
+
+    ti = [t.lower() for t in titles_cfg.get("include", [])]
+    te = [t.lower() for t in titles_cfg.get("exclude", [])]
+    ki = [k.lower() for k in keywords_cfg.get("include", [])]
+    ke = [k.lower() for k in keywords_cfg.get("exclude", [])]
+    li = [l.lower() for l in locations_cfg.get("include", [])]
+    le = [l.lower() for l in locations_cfg.get("exclude", [])]
 
     title = job.title.lower()
     loc   = job.location.lower()
