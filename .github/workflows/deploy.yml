@@ -58,6 +58,19 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Verify OIDC and env
+        run: |
+          set -e
+          echo "Region=${{ secrets.AWS_REGION }}"
+          aws sts get-caller-identity
+          ls -lh package.zip || (echo "package.zip missing"; exit 1)
+
+      - name: Enable CLI debug (temp)
+        run: |
+          echo "AWS CLI version:" && aws --version
+          echo "Listing Lambda (expect either 0 or some):"
+          aws lambda list-functions --max-items 5 || true
+
       - name: Create or Update Lambda
         shell: bash
         run: |
