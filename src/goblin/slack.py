@@ -22,9 +22,25 @@ def job_to_blocks(job, score: float | None = None):
     line2 = f"{job.location}  ·  _{job.source}_"
     if score is not None:
         line2 = f"Score: *{score:.1f}*  ·  {line2}"
+
+    meta: list[str] = []
+    if getattr(job, "job_type", None):
+        meta.append(job.job_type)
+    if getattr(job, "salary", None):
+        meta.append(job.salary)
+    if getattr(job, "published_at", None):
+        meta.append(job.published_at.split("T")[0])
+    tags = getattr(job, "tags", []) or []
+    if tags:
+        meta.append(", ".join(tags[:3]))
+
+    detail_lines = [line2]
+    if meta:
+        detail_lines.append(" • ".join(meta))
+
+    text = f"*<{job.url}|{job.title}>*  ·  {job.company}\n" + "\n".join(detail_lines)
     return [
-        {"type":"section","text":{"type":"mrkdwn",
-         "text": f"*<{job.url}|{job.title}>*  ·  {job.company}\n{line2}"}}
+        {"type": "section", "text": {"type": "mrkdwn", "text": text}}
     ]
 
 async def post_blocks(blocks: List[Dict], text: str = "New jobs", channel_override: str | None = None):

@@ -34,6 +34,10 @@ def fetch_remotive(query: str = "", category: str = "software-dev", limit: int =
 
     jobs: List[Job] = []
     for item in jobs_raw[:limit]:
+        description = (item.get("description") or "").strip()
+        tags_raw = item.get("tags") or []
+        tags = [t.strip() for t in tags_raw if isinstance(t, str) and t.strip()]
+
         jobs.append(
             Job(
                 id=f"remotive-{item.get('id')}",
@@ -42,6 +46,12 @@ def fetch_remotive(query: str = "", category: str = "software-dev", limit: int =
                 location=(item.get("candidate_required_location") or "Remote").strip(),
                 url=(item.get("url") or "").strip(),
                 source="remotive",
+                description=description or None,
+                tags=tags,
+                salary=((item.get("salary") or "").strip() or None),
+                job_type=((item.get("job_type") or "").strip() or None),
+                published_at=((item.get("publication_date") or "").strip() or None),
+                company_logo=((item.get("company_logo_url") or "").strip() or None),
             )
         )
     return jobs

@@ -12,6 +12,11 @@ def fetch_stub() -> List[Job]:
             location="Remote — United States",
             url="https://example.com/jobs/1",
             source="stub",
+            description="Work with a small platform team shipping cloud-native tooling.",
+            tags=["python", "aws", "serverless"],
+            salary="$140k – $170k",
+            job_type="Full-time",
+            published_at=today,
         ),
         Job(
             id="stub-2",
@@ -20,5 +25,10 @@ def fetch_stub() -> List[Job]:
             location="Onsite Only — Texas",
             url="https://example.com/jobs/2",
             source="stub",
+            description="Lead modernization of critical infrastructure and mentor engineers.",
+            tags=["platform", "kubernetes"],
+            salary="$180k – $210k",
+            job_type="Full-time",
+            published_at=today,
         ),
     ]

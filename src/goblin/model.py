@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List, Optional
 
 @dataclass
 class Job:
@@ -8,3 +9,9 @@ class Job:
     location: str
     url: str
     source: str = "stub"
+    description: Optional[str] = None
+    tags: List[str] = field(default_factory=list)
+    salary: Optional[str] = None
+    job_type: Optional[str] = None
+    published_at: Optional[str] = None
+    company_logo: Optional[str] = None
