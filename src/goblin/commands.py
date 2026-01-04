@@ -189,6 +189,24 @@ def _save_sources_file(data: dict, path: str = "configs/sources.yaml") -> None:
         yaml.safe_dump(data, f, sort_keys=False)
 
 
+def _get_rule_name(args: List[str], profile: str) -> str:
+    """Resolve rule name from --rule flag, profile config, or env default."""
+    if "--rule" in args:
+        idx = args.index("--rule")
+        if idx + 1 < len(args):
+            return args[idx + 1]
+    prof = get_profile(profile)
+    if prof and prof.get("schedule_rule"):
+        return prof["schedule_rule"]
+    env_rule = os.environ.get("GOBLIN_SCHEDULE_RULE")
+    if env_rule:
+        return env_rule
+    raise ScheduleError(
+        "No schedule rule provided. Use --rule or set schedule_rule in "
+        "profile or GOBLIN_SCHEDULE_RULE."
+    )
+
+
 def command_filters_set_salary(args: List[str]) -> CommandResult:
     profile_name = _get_profile_name(args)
     prof = get_profile(profile_name)
@@ -312,10 +330,19 @@ def command_sources_set(args: List[str]) -> CommandResult:
 
 def command_schedule_show() -> CommandResult:
     try:
-        expr = get_schedule()
+        # default profile if none provided
+        rule_name = _get_rule_name([], "nick")
+        expr = get_schedule(rule_name)
         if not expr:
-            return CommandResult(text="Schedule not set.")
-        return CommandResult(text=f"Schedule: `{expr}`")
+            return CommandResult(
+                text=f"Schedule not set for rule `{rule_name}`."
+            )
+        return CommandResult(
+            text=(
+                f"Rule `{rule_name}` schedule: "
+                f"`{expr}`"
+            )
+        )
     except ScheduleError as e:
         return CommandResult(text=str(e), status=400)
 
@@ -328,8 +355,14 @@ def command_schedule_set(args: List[str]) -> CommandResult:
         )
     expr = args[0]
     try:
-        new_expr = set_schedule(expr)
-        return CommandResult(text=f"Schedule updated to `{new_expr}`")
+        # allow --rule flag after expr; also allow --profile to derive rule
+        rest = args[1:]
+        profile_name = _get_profile_name(rest)
+        rule_name = _get_rule_name(rest, profile_name)
+        new_expr = set_schedule(expr, rule_name)
+        return CommandResult(
+            text=f"Rule `{rule_name}` updated to `{new_expr}`"
+        )
     except ScheduleError as e:
         return CommandResult(text=str(e), status=400)
 
@@ -484,7 +517,20 @@ def handle_command(text: str) -> CommandResult:
         sub = args[0].lower()
         sub_args = args[1:]
         if sub == "show":
-            return command_schedule_show()
+            # pass through profile/rule flags
+            try:
+                profile_name = _get_profile_name(sub_args)
+                rule_name = _get_rule_name(sub_args, profile_name)
+                expr = get_schedule(rule_name)
+                if not expr:
+                    return CommandResult(
+                        text=f"Schedule not set for rule `{rule_name}`."
+                    )
+                return CommandResult(
+                    text=f"Rule `{rule_name}` schedule: `{expr}`"
+                )
+            except ScheduleError as e:
+                return CommandResult(text=str(e), status=400)
         if sub == "set":
             return command_schedule_set(sub_args)
         return CommandResult(

@@ -123,9 +123,9 @@ salary:
   min: 140000          # rejects jobs whose lower-bound salary is below this
   allow_missing: false # set true to keep jobs without a salary listed
 ```
-Filters are now stored remotely when `GOBLIN_FILTERS_BUCKET` is set (S3). Env vars:
-- `GOBLIN_FILTERS_BUCKET`: S3 bucket for per-profile filter YAML (key: `<prefix>/<profile>.yaml`)
-- `GOBLIN_FILTERS_PREFIX`: optional key prefix (default: `filters`)
+Filters are now stored remotely in DynamoDB when `GOBLIN_FILTERS_TABLE` is set. Env vars:
+- `GOBLIN_FILTERS_TABLE`: DynamoDB table name
+- `GOBLIN_FILTERS_PK`: partition key name (default: `profile`)
 
 ### Ranking (`configs/ranking.yaml`)
 Adjust the weight of keyword hits, title matches, remote bonuses, and penalties.
