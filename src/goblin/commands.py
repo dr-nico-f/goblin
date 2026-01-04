@@ -34,7 +34,7 @@ from goblin.filter_store import (
     save_profile_ranking,
 )
 from goblin.filters import matches
-from goblin.profiles import get_profile, load_profiles
+from goblin.profiles import get_profile, load_profiles, get_profile_for_slack
 from goblin.rank import load_profile_weights, score as score_job
 from goblin.schedule import ScheduleError, get_schedule, set_schedule
 from goblin.slack import job_to_blocks, post_blocks
@@ -127,8 +127,16 @@ def command_help() -> CommandResult:
     return CommandResult(text="\n".join(lines), blocks=blocks)
 
 
-def command_status(args: List[str]) -> CommandResult:
-    profile_name = _get_profile_name(args)
+def command_status(
+    args: List[str],
+    user_id: str | None = None,
+    channel_id: str | None = None,
+) -> CommandResult:
+    profile_name = _get_profile_name(
+        args,
+        user_id=user_id,
+        channel_id=channel_id,
+    )
     prof = get_profile(profile_name)
     if not prof:
         return CommandResult(
@@ -163,8 +171,16 @@ def command_status(args: List[str]) -> CommandResult:
     return CommandResult(text="\n".join(lines), blocks=blocks)
 
 
-def command_filters_salary(args: List[str]) -> CommandResult:
-    profile_name = _get_profile_name(args)
+def command_filters_salary(
+    args: List[str],
+    user_id: str | None = None,
+    channel_id: str | None = None,
+) -> CommandResult:
+    profile_name = _get_profile_name(
+        args,
+        user_id=user_id,
+        channel_id=channel_id,
+    )
     prof = get_profile(profile_name)
     if not prof:
         return CommandResult(
@@ -186,8 +202,16 @@ def command_filters_salary(args: List[str]) -> CommandResult:
     return CommandResult(text=txt, blocks=blocks)
 
 
-def command_filters_show(args: List[str]) -> CommandResult:
-    profile_name = _get_profile_name(args)
+def command_filters_show(
+    args: List[str],
+    user_id: str | None = None,
+    channel_id: str | None = None,
+) -> CommandResult:
+    profile_name = _get_profile_name(
+        args,
+        user_id=user_id,
+        channel_id=channel_id,
+    )
     prof = get_profile(profile_name)
     if not prof:
         return CommandResult(
@@ -375,8 +399,16 @@ def _cron_to_text(expr: str) -> str:
     return ", ".join(parts_txt)
 
 
-def command_filters_set_salary(args: List[str]) -> CommandResult:
-    profile_name = _get_profile_name(args)
+def command_filters_set_salary(
+    args: List[str],
+    user_id: str | None = None,
+    channel_id: str | None = None,
+) -> CommandResult:
+    profile_name = _get_profile_name(
+        args,
+        user_id=user_id,
+        channel_id=channel_id,
+    )
     prof = get_profile(profile_name)
     if not prof:
         return CommandResult(
@@ -442,8 +474,16 @@ def command_filters_set_salary(args: List[str]) -> CommandResult:
     return CommandResult(text=txt, blocks=blocks)
 
 
-def command_ranking_show(args: List[str]) -> CommandResult:
-    profile_name = _get_profile_name(args)
+def command_ranking_show(
+    args: List[str],
+    user_id: str | None = None,
+    channel_id: str | None = None,
+) -> CommandResult:
+    profile_name = _get_profile_name(
+        args,
+        user_id=user_id,
+        channel_id=channel_id,
+    )
     prof = get_profile(profile_name)
     if not prof:
         return CommandResult(
@@ -460,7 +500,11 @@ def command_ranking_show(args: List[str]) -> CommandResult:
     return CommandResult(text=txt, blocks=blocks)
 
 
-def command_ranking_set(args: List[str]) -> CommandResult:
+def command_ranking_set(
+    args: List[str],
+    user_id: str | None = None,
+    channel_id: str | None = None,
+) -> CommandResult:
     if len(args) < 2:
         return CommandResult(
             text="Usage: ranking set <weight> <value> [--profile nick]",
@@ -474,7 +518,11 @@ def command_ranking_set(args: List[str]) -> CommandResult:
             text="Value must be a number",
             status=400,
         )
-    profile_name = _get_profile_name(args)
+    profile_name = _get_profile_name(
+        args,
+        user_id=user_id,
+        channel_id=channel_id,
+    )
     prof = get_profile(profile_name)
     if not prof:
         return CommandResult(
@@ -597,7 +645,7 @@ def command_schedule_set(args: List[str]) -> CommandResult:
     try:
         # allow --rule flag after expr; also allow --profile to derive rule
         rest = args[1:]
-        profile_name = _get_profile_name(rest)
+        profile_name = _get_profile_name(rest, user_id=None, channel_id=None)
         rule_name = _get_rule_name(rest, profile_name)
         new_expr = set_schedule(expr, rule_name)
         txt = f"Rule `{rule_name}` updated to `{new_expr}`"
@@ -607,8 +655,16 @@ def command_schedule_set(args: List[str]) -> CommandResult:
         return CommandResult(text=str(e), status=400)
 
 
-def command_run(args: List[str]) -> CommandResult:
-    profile_name = _get_profile_name(args)
+def command_run(
+    args: List[str],
+    user_id: str | None = None,
+    channel_id: str | None = None,
+) -> CommandResult:
+    profile_name = _get_profile_name(
+        args,
+        user_id=user_id,
+        channel_id=channel_id,
+    )
     prof = get_profile(profile_name)
     if not prof:
         return CommandResult(
@@ -719,7 +775,11 @@ def command_run(args: List[str]) -> CommandResult:
     )
 
 
-def handle_command(text: str) -> CommandResult:
+def handle_command(
+    text: str,
+    user_id: str | None = None,
+    channel_id: str | None = None,
+) -> CommandResult:
     """
     Very small parser; extend over time with more verbs and subcommands.
     """
@@ -734,21 +794,33 @@ def handle_command(text: str) -> CommandResult:
         return command_help()
 
     if cmd == "status":
-        return command_status(args)
+        return command_status(args, user_id=user_id, channel_id=channel_id)
 
     if cmd == "run":
-        return command_run(args)
+        return command_run(args, user_id=user_id, channel_id=channel_id)
 
     if cmd == "filters" and args:
         sub = args[0].lower()
         sub_args = args[1:]
         if sub == "salary":
-            return command_filters_salary(sub_args)
+            return command_filters_salary(
+                sub_args,
+                user_id=user_id,
+                channel_id=channel_id,
+            )
         if sub == "show":
-            return command_filters_show(sub_args)
+            return command_filters_show(
+                sub_args,
+                user_id=user_id,
+                channel_id=channel_id,
+            )
         if sub == "set" and sub_args:
             if sub_args[0].lower() == "salary":
-                return command_filters_set_salary(sub_args[1:])
+                return command_filters_set_salary(
+                    sub_args[1:],
+                    user_id=user_id,
+                    channel_id=channel_id,
+                )
             return CommandResult(
                 text=f"Unknown filters set target `{sub_args[0]}`",
                 status=400,
@@ -765,9 +837,17 @@ def handle_command(text: str) -> CommandResult:
         sub = args[0].lower()
         sub_args = args[1:]
         if sub == "show":
-            return command_ranking_show(sub_args)
+            return command_ranking_show(
+                sub_args,
+                user_id=user_id,
+                channel_id=channel_id,
+            )
         if sub == "set":
-            return command_ranking_set(sub_args)
+            return command_ranking_set(
+                sub_args,
+                user_id=user_id,
+                channel_id=channel_id,
+            )
         return CommandResult(
             text=f"Unknown ranking subcommand `{sub}`",
             status=400,
@@ -784,7 +864,11 @@ def handle_command(text: str) -> CommandResult:
         if sub == "show":
             # pass through profile/rule flags
             try:
-                profile_name = _get_profile_name(sub_args)
+                profile_name = _get_profile_name(
+                    sub_args,
+                    user_id=user_id,
+                    channel_id=channel_id,
+                )
                 rule_name = _get_rule_name(sub_args, profile_name)
                 expr = get_schedule(rule_name)
                 if not expr:
