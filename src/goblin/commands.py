@@ -51,7 +51,7 @@ class CommandResult:
 
 def _get_profile_name(
     args: List[str],
-    default: str = "nick",
+    default: str = "Nick",
     user_id: str | None = None,
     channel_id: str | None = None,
 ) -> str:
@@ -71,9 +71,9 @@ def _format_salary_info(filters: dict) -> str:
     min_salary = salary_cfg.get("min")
     allow_missing = bool(salary_cfg.get("allow_missing", False))
     if min_salary is None:
-        return "Salary filter: not set"
+        return "*Salary filter*: not set"
     return (
-        "Salary filter: "
+        "*Salary filter*: "
         f"min=${min_salary:,} "
         f"(allow_missing={allow_missing})"
     )
