@@ -101,6 +101,12 @@ All runs are logged to `logs/goblin.log`.
 
 ### Filters (`configs/filters.yaml`)
 Control which titles, keywords, and locations Goblin includes or excludes.
+You can also add optional salary gating, e.g.:
+```
+salary:
+  min: 140000          # rejects jobs whose lower-bound salary is below this
+  allow_missing: false # set true to keep jobs without a salary listed
+```
 
 ### Ranking (`configs/ranking.yaml`)
 Adjust the weight of keyword hits, title matches, remote bonuses, and penalties.

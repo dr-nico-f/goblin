@@ -38,3 +38,7 @@ locations:
   exclude:
     - Onsite Only
     - Europe
+
+salary:
+  min: 150000
+  allow_missing: false

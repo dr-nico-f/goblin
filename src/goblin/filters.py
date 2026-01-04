@@ -1,5 +1,30 @@
+import re
 import yaml
 from goblin.model import Job
+
+
+def _parse_salary_to_int(raw: str) -> int | None:
+    """
+    Parse a salary string and return the lower bound as an int (USD-like).
+    Examples handled: "$140k – $170k", "140,000-170,000", "$120k", "120000".
+    Returns None if no numeric value can be parsed.
+    """
+    if not raw:
+        return None
+
+    # Split on common separators (dash, en dash, "to")
+    parts = re.split(r"[–-]|to", raw, flags=re.IGNORECASE)
+    nums = []
+    for part in parts:
+        match = re.search(r"([\d][\d,\.]*)(k)?", part, flags=re.IGNORECASE)
+        if not match:
+            continue
+        val = float(match.group(1).replace(",", ""))
+        if match.group(2):  # has 'k'
+            val *= 1000
+        nums.append(int(val))
+
+    return min(nums) if nums else None
 
 def load_filters(path="configs/filters.yaml") -> dict:
     """Load filter config from YAML."""
@@ -10,6 +35,7 @@ def matches(job: Job, filters: dict) -> bool:
     titles_cfg = filters.get("titles", {}) or {}
     keywords_cfg = filters.get("keywords", {}) or {}
     locations_cfg = filters.get("locations", {}) or {}
+    salary_cfg = filters.get("salary", {}) or {}
 
     ti = [t.lower() for t in titles_cfg.get("include", [])]
     te = [t.lower() for t in titles_cfg.get("exclude", [])]
@@ -44,6 +70,16 @@ def matches(job: Job, filters: dict) -> bool:
         if "remote" in li and any(s in loc for s in remote_syns):
             pass  # accept
         elif not any(l in loc for l in li):
+            return False
+
+    # Salary minimum (uses lower bound of range if provided)
+    min_salary = salary_cfg.get("min")
+    allow_missing_salary = bool(salary_cfg.get("allow_missing", False))
+    if min_salary is not None:
+        low = _parse_salary_to_int(getattr(job, "salary", None))
+        if low is None and not allow_missing_salary:
+            return False
+        if low is not None and low < float(min_salary):
             return False
 
     return True
