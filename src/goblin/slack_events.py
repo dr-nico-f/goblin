@@ -87,14 +87,16 @@ def lambda_handler(event, _context):
     if content_type.startswith("application/x-www-form-urlencoded"):
         cmd = _parse_slash_command(body)
         text = cmd.get("text", "")
-        resp = handle_command(text)
-        response_body = json.dumps(
-            {"response_type": "ephemeral", "text": resp.text}
-        )
+        user_id = cmd.get("user_id")
+        channel_id = cmd.get("channel_id")
+        resp = handle_command(text, user_id=user_id, channel_id=channel_id)
+        response_body = {"response_type": "ephemeral", "text": resp.text}
+        if resp.blocks:
+            response_body["blocks"] = resp.blocks
         return {
             "statusCode": resp.status,
             "headers": {"Content-Type": "application/json"},
-            "body": response_body,
+            "body": json.dumps(response_body),
         }
 
     # Fallback for unsupported payloads

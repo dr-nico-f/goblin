@@ -47,12 +47,21 @@ class CommandResult:
     status: int = 200
 
 
-def _get_profile_name(args: List[str], default: str = "nick") -> str:
+def _get_profile_name(
+    args: List[str],
+    default: str = "nick",
+    user_id: str | None = None,
+    channel_id: str | None = None,
+) -> str:
     if "--profile" in args:
         idx = args.index("--profile")
         if idx + 1 < len(args):
             return args[idx + 1]
-    return default
+    return get_profile_for_slack(
+        user_id=user_id,
+        channel_id=channel_id,
+        default=default,
+    )
 
 
 def _format_salary_info(filters: dict) -> str:
