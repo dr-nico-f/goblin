@@ -12,6 +12,8 @@ permissions:
 env:
   FUNCTION_NAME: goblin-bot
   PY_VERSION: "3.12"
+  FILTERS_TABLE: goblin-filters
+  FILTERS_PK: profile
 
 jobs:
   deploy:
@@ -90,10 +92,17 @@ jobs:
           echo "Waiting for function to become stable..."
           aws lambda wait function-updated --function-name "$FN"
 
-          echo "Updating environment variables (incl. cache dir)..."
+          echo "Updating environment variables (replaces entire env set)..."
           aws lambda update-function-configuration \
             --function-name "$FN" \
-            --environment "Variables={GOBLIN_SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }},GOBLIN_CACHE_DIR=/tmp/goblin}"
+            --environment "Variables={
+              GOBLIN_SLACK_BOT_TOKEN=${{ secrets.SLACK_BOT_TOKEN }},
+              SLACK_SIGNING_SECRET=${{ secrets.SLACK_SIGNING_SECRET }},
+              GOBLIN_FILTERS_TABLE=${{ env.FILTERS_TABLE }},
+              GOBLIN_FILTERS_PK=${{ env.FILTERS_PK }},
+              GOBLIN_SCHEDULE_RULE=${{ secrets.GOBLIN_SCHEDULE_RULE }},
+              GOBLIN_CACHE_DIR=/tmp/goblin
+            }"
 
           echo "Waiting again for function to become stable..."
           aws lambda wait function-updated --function-name "$FN"
