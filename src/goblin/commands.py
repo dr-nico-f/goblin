@@ -252,6 +252,120 @@ def _get_rule_name(args: List[str], profile: str) -> str:
     )
 
 
+def _cron_to_text(expr: str) -> str:
+    """
+    Friendly-ish description for AWS cron (6 fields) or 5-field cron.
+    Handles simple wildcards, single values, ranges, lists, and steps
+    for minutes/hours/dow. Not a full cron parser, but good enough for
+    common schedules.
+    """
+    expr = expr.strip()
+    if expr.startswith("cron(") and expr.endswith(")"):
+        expr = expr[5:-1]
+    parts = expr.split()
+    if len(parts) not in (5, 6):
+        return expr
+    # AWS: min hour dom month dow [year]
+    # Standard: min hour dom month dow
+    minute = parts[0]
+    hour = parts[1] if len(parts) >= 2 else "*"
+    dom = parts[2] if len(parts) >= 3 else "*"
+    month = parts[3] if len(parts) >= 4 else "*"
+    dow = parts[4] if len(parts) >= 5 else "*"
+    year = parts[5] if len(parts) == 6 else ""
+
+    def fmt_time(hh: str, mm: str) -> str:
+        if hh == "*" and mm == "*":
+            return "every minute"
+        if hh == "*" and "/" in mm:
+            return f"every {mm.split('/')[1]} minutes"
+        if hh == "*":
+            return f"every hour at :{mm.zfill(2)}"
+        if "/" in hh:
+            step = hh.split("/")[1]
+            return f"every {step} hours at :{mm.zfill(2)} UTC"
+        return f"{hh}:{mm.zfill(2)} UTC"
+
+    def fmt_field(val: str, label: str, names: dict | None = None) -> str:
+        if val in ("*", "?"):
+            return f"every {label}"
+        if "/" in val:
+            base, step = val.split("/", 1)
+            base_txt = "all" if base == "*" else base
+            return f"{label} every {step} from {base_txt}"
+        if "-" in val:
+            a, b = val.split("-", 1)
+            a = names.get(a, a) if names else a
+            b = names.get(b, b) if names else b
+            return f"{label} {a}–{b}"
+        if "," in val:
+            items = [names.get(x, x) if names else x for x in val.split(",")]
+            return f"{label} {', '.join(items)}"
+        return f"{label} {names.get(val, val) if names else val}"
+
+    dow_names = {
+        "0": "Sun",
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat",
+        "7": "Sun",
+        "SUN": "Sun",
+        "MON": "Mon",
+        "TUE": "Tue",
+        "WED": "Wed",
+        "THU": "Thu",
+        "FRI": "Fri",
+        "SAT": "Sat",
+    }
+    month_names = {
+        "1": "Jan",
+        "2": "Feb",
+        "3": "Mar",
+        "4": "Apr",
+        "5": "May",
+        "6": "Jun",
+        "7": "Jul",
+        "8": "Aug",
+        "9": "Sep",
+        "10": "Oct",
+        "11": "Nov",
+        "12": "Dec",
+        "JAN": "Jan",
+        "FEB": "Feb",
+        "MAR": "Mar",
+        "APR": "Apr",
+        "MAY": "May",
+        "JUN": "Jun",
+        "JUL": "Jul",
+        "AUG": "Aug",
+        "SEP": "Sep",
+        "OCT": "Oct",
+        "NOV": "Nov",
+        "DEC": "Dec",
+    }
+
+    time_txt = fmt_time(hour, minute)
+    dom_txt = fmt_field(dom, "day of month")
+    dow_txt = fmt_field(dow, "weekday(s)", dow_names)
+    month_txt = fmt_field(month, "month(s)", month_names)
+    year_txt = "" if not year or year == "*" else f"in year {year}"
+
+    parts_txt = [time_txt]
+    if dow not in ("*", "?"):
+        parts_txt.append(dow_txt)
+    if dom not in ("*", "?"):
+        parts_txt.append(dom_txt)
+    if month != "*":
+        parts_txt.append(month_txt)
+    if year_txt:
+        parts_txt.append(year_txt)
+
+    return ", ".join(parts_txt)
+
+
 def command_filters_set_salary(args: List[str]) -> CommandResult:
     profile_name = _get_profile_name(args)
     prof = get_profile(profile_name)
@@ -377,8 +491,12 @@ def command_profiles_list() -> CommandResult:
     profiles = (load_profiles().get("profiles") or {}).keys()
     if not profiles:
         return CommandResult(text="No profiles found")
-    txt = "Profiles: " + ", ".join(sorted(profiles))
-    blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": txt}}]
+    names = [p.title() for p in sorted(profiles)]
+    txt = "Profiles:\n• " + "\n• ".join(names)
+    blocks = [
+        {"type": "header", "text": {"type": "plain_text", "text": "Profiles"}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": txt}},
+    ]
     return CommandResult(text=txt, blocks=blocks)
 
 
@@ -394,8 +512,11 @@ def command_sources_list() -> CommandResult:
             f"category={cfg.get('category', '')}, "
             f"query='{cfg.get('query', '')}')"
         )
-    txt = "\n".join(parts)
-    blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": txt}}]
+    txt = "Sources:\n• " + "\n• ".join(parts)
+    blocks = [
+        {"type": "header", "text": {"type": "plain_text", "text": "Sources"}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": txt}},
+    ]
     return CommandResult(text=txt, blocks=blocks)
 
 
@@ -450,7 +571,7 @@ def command_schedule_show() -> CommandResult:
             return CommandResult(
                 text=f"Schedule not set for rule `{rule_name}`."
             )
-        txt = f"Rule `{rule_name}` schedule: `{expr}`"
+        txt = f"Rule `{rule_name}` schedule: `{expr}`\n{_cron_to_text(expr)}"
         blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": txt}}]
         return CommandResult(text=txt, blocks=blocks)
     except ScheduleError as e:
@@ -661,9 +782,17 @@ def handle_command(text: str) -> CommandResult:
                     return CommandResult(
                         text=f"Schedule not set for rule `{rule_name}`."
                     )
-                return CommandResult(
-                    text=f"Rule `{rule_name}` schedule: `{expr}`"
+                txt = (
+                    f"Rule `{rule_name}` schedule: `{expr}`\n"
+                    f"{_cron_to_text(expr)}"
                 )
+                blocks = [
+                    {
+                        "type": "section",
+                        "text": {"type": "mrkdwn", "text": txt},
+                    }
+                ]
+                return CommandResult(text=txt, blocks=blocks)
             except ScheduleError as e:
                 return CommandResult(text=str(e), status=400)
         if sub == "set":
