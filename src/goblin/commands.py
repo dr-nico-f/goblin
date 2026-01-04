@@ -100,7 +100,13 @@ def command_help() -> CommandResult:
         "• `sources list` — list configured sources",
         "• `schedule show|set` — view or note schedule (stub)",
     ]
-    return CommandResult(text="\n".join(lines))
+    blocks = [
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": "\n".join(lines)},
+        }
+    ]
+    return CommandResult(text="\n".join(lines), blocks=blocks)
 
 
 def command_status(args: List[str]) -> CommandResult:
@@ -126,7 +132,17 @@ def command_status(args: List[str]) -> CommandResult:
         f"query='{remotive_cfg.get('query', '')}')",
         _format_salary_info(filters),
     ]
-    return CommandResult(text="\n".join(lines))
+    blocks = [
+        {
+            "type": "header",
+            "text": {"type": "plain_text", "text": "Goblin status"},
+        },
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": "\n".join(lines)},
+        },
+    ]
+    return CommandResult(text="\n".join(lines), blocks=blocks)
 
 
 def command_filters_salary(args: List[str]) -> CommandResult:
@@ -139,7 +155,17 @@ def command_filters_salary(args: List[str]) -> CommandResult:
         )
     filt_path = prof.get("filters", "configs/filters.yaml")
     filters = load_profile_filters(profile_name, filt_path)
-    return CommandResult(text=_format_salary_info(filters))
+    txt = _format_salary_info(filters)
+    blocks = [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*Profile*: {profile_name}\n{txt}",
+            },
+        }
+    ]
+    return CommandResult(text=txt, blocks=blocks)
 
 
 def command_filters_show(args: List[str]) -> CommandResult:
@@ -165,7 +191,17 @@ def command_filters_show(args: List[str]) -> CommandResult:
         _fmt_list("Locations exclude", locations.get("exclude") or []),
         _format_salary_info(filters),
     ]
-    return CommandResult(text="\n".join(parts))
+    blocks = [
+        {
+            "type": "header",
+            "text": {"type": "plain_text", "text": f"Filters: {profile_name}"},
+        },
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": "\n".join(parts)},
+        },
+    ]
+    return CommandResult(text="\n".join(parts), blocks=blocks)
 
 
 def _parse_bool(val: str) -> bool:
@@ -261,16 +297,26 @@ def command_filters_set_salary(args: List[str]) -> CommandResult:
     data["salary"] = salary_cfg
     save_profile_filters(profile_name, data, filt_path)
 
-    return CommandResult(text=_format_salary_info(data))
+    txt = _format_salary_info(data)
+    blocks = [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*Profile*: {profile_name}\n{txt}",
+            },
+        }
+    ]
+    return CommandResult(text=txt, blocks=blocks)
 
 
 def command_profiles_list() -> CommandResult:
     profiles = (load_profiles().get("profiles") or {}).keys()
-    return CommandResult(
-        text="Profiles: " + ", ".join(sorted(profiles))
-        if profiles
-        else "No profiles found"
-    )
+    if not profiles:
+        return CommandResult(text="No profiles found")
+    txt = "Profiles: " + ", ".join(sorted(profiles))
+    blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": txt}}]
+    return CommandResult(text=txt, blocks=blocks)
 
 
 def command_sources_list() -> CommandResult:
@@ -285,7 +331,9 @@ def command_sources_list() -> CommandResult:
             f"category={cfg.get('category', '')}, "
             f"query='{cfg.get('query', '')}')"
         )
-    return CommandResult(text="\n".join(parts))
+    txt = "\n".join(parts)
+    blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": txt}}]
+    return CommandResult(text=txt, blocks=blocks)
 
 
 def command_sources_set(args: List[str]) -> CommandResult:
@@ -325,7 +373,9 @@ def command_sources_set(args: List[str]) -> CommandResult:
     sources[name] = cfg
     data["sources"] = sources
     _save_sources_file(data, path)
-    return CommandResult(text=f"Updated source `{name}`: {field}={value}")
+    txt = f"Updated source `{name}`: {field}={value}"
+    blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": txt}}]
+    return CommandResult(text=txt, blocks=blocks)
 
 
 def command_schedule_show() -> CommandResult:
@@ -337,12 +387,9 @@ def command_schedule_show() -> CommandResult:
             return CommandResult(
                 text=f"Schedule not set for rule `{rule_name}`."
             )
-        return CommandResult(
-            text=(
-                f"Rule `{rule_name}` schedule: "
-                f"`{expr}`"
-            )
-        )
+        txt = f"Rule `{rule_name}` schedule: `{expr}`"
+        blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": txt}}]
+        return CommandResult(text=txt, blocks=blocks)
     except ScheduleError as e:
         return CommandResult(text=str(e), status=400)
 
@@ -360,9 +407,9 @@ def command_schedule_set(args: List[str]) -> CommandResult:
         profile_name = _get_profile_name(rest)
         rule_name = _get_rule_name(rest, profile_name)
         new_expr = set_schedule(expr, rule_name)
-        return CommandResult(
-            text=f"Rule `{rule_name}` updated to `{new_expr}`"
-        )
+        txt = f"Rule `{rule_name}` updated to `{new_expr}`"
+        blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": txt}}]
+        return CommandResult(text=txt, blocks=blocks)
     except ScheduleError as e:
         return CommandResult(text=str(e), status=400)
 
@@ -462,7 +509,20 @@ def command_run(args: List[str]) -> CommandResult:
         text=(
             f"[{profile_name}] Posted {len(new)} new job(s). "
             f"fetched={len(jobs)} matched={len(matched)} new={len(new)}"
-        )
+        ),
+        blocks=[
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"[{profile_name}] Posted {len(new)} new job(s).\n"
+                        f"fetched={len(jobs)} matched={len(matched)} "
+                        f"new={len(new)}"
+                    ),
+                },
+            }
+        ],
     )
 
 

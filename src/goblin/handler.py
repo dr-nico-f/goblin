@@ -9,6 +9,7 @@ import os
 import json
 import asyncio
 from goblin import slack_events
+from goblin.filter_store import load_profile_filters
 from goblin.config import load_sources
 from goblin.profiles import get_profile
 from goblin.filters import load_filters, matches
@@ -45,8 +46,8 @@ def lambda_handler(event, context):
         return _resp(500, {"error": f"Profile '{profile}' missing 'channel' in profiles.yaml"})
 
     # Per-profile config paths + cache path
-    filt_path  = prof.get("filters", "configs/filters.yaml")
-    rank_path  = prof.get("ranking", "configs/ranking.yaml")
+    filt_path = prof.get("filters", "configs/filters.yaml")
+    rank_path = prof.get("ranking", "configs/ranking.yaml")
     cache_path = cache_file(profile)
 
     # Source & defaults (from sources.yaml), allow event overrides
@@ -66,7 +67,7 @@ def lambda_handler(event, context):
         return _resp(400, {"error": f"Unknown source '{source}'"})
 
     # Filter + score
-    filters = load_filters(filt_path)
+    filters = load_profile_filters(profile, filt_path)
     weights = load_weights(rank_path)
     matched = [j for j in jobs if matches(j, filters)]
     scored = [(score_job(j, filters, weights), j) for j in matched]
