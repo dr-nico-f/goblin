@@ -4,7 +4,7 @@ Slack Events / Slash Command handler (Lambda-friendly).
 Expects:
   - Environment variables:
       SLACK_SIGNING_SECRET : Slack app signing secret
-      GOBLIN_SLACK_BOT_TOKEN: already used elsewhere for posting (not required for responses here)
+      GOBLIN_SLACK_BOT_TOKEN: already used elsewhere for posting
   - API Gateway / Lambda proxy integration providing headers + raw body.
 
 Current supported commands (extend in commands.py):
@@ -14,6 +14,7 @@ Current supported commands (extend in commands.py):
 """
 
 import base64
+import binascii
 import hashlib
 import hmac
 import json
@@ -25,7 +26,10 @@ from goblin.commands import handle_command
 
 
 def _verify_signature(headers: dict, body: str, signing_secret: str) -> bool:
-    ts = headers.get("X-Slack-Request-Timestamp") or headers.get("x-slack-request-timestamp")
+    ts = (
+        headers.get("X-Slack-Request-Timestamp")
+        or headers.get("x-slack-request-timestamp")
+    )
     sig = headers.get("X-Slack-Signature") or headers.get("x-slack-signature")
     if not (ts and sig):
         return False
@@ -35,7 +39,11 @@ def _verify_signature(headers: dict, body: str, signing_secret: str) -> bool:
         return False
 
     basestring = f"v0:{ts}:{body}".encode("utf-8")
-    my_sig = "v0=" + hmac.new(signing_secret.encode("utf-8"), basestring, hashlib.sha256).hexdigest()
+    my_sig = "v0=" + hmac.new(
+        signing_secret.encode("utf-8"),
+        basestring,
+        hashlib.sha256,
+    ).hexdigest()
     return hmac.compare_digest(my_sig, sig)
 
 
@@ -45,13 +53,13 @@ def _parse_slash_command(body: str) -> dict:
     return {k: v[0] for k, v in parsed.items()}
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, _context):
     body = event.get("body", "") or ""
     headers = event.get("headers") or {}
     if event.get("isBase64Encoded"):
         try:
             body = base64.b64decode(body).decode("utf-8")
-        except Exception:
+        except (binascii.Error, UnicodeDecodeError, ValueError):
             return {"statusCode": 400, "body": "Failed to decode body"}
 
     # Slack URL verification (events API)
@@ -59,7 +67,7 @@ def lambda_handler(event, context):
         payload = json.loads(body)
         if payload.get("type") == "url_verification":
             return {"statusCode": 200, "body": payload.get("challenge", "")}
-    except Exception:
+    except json.JSONDecodeError:
         # Not JSON; likely a slash command (form-encoded)
         pass
 
@@ -71,16 +79,23 @@ def lambda_handler(event, context):
         return {"statusCode": 401, "body": "Signature verification failed"}
 
     # Slash command path (form-encoded)
-    if headers.get("Content-Type", "").startswith("application/x-www-form-urlencoded"):
+    content_type = (
+        headers.get("Content-Type")
+        or headers.get("content-type")
+        or ""
+    )
+    if content_type.startswith("application/x-www-form-urlencoded"):
         cmd = _parse_slash_command(body)
         text = cmd.get("text", "")
         resp = handle_command(text)
+        response_body = json.dumps(
+            {"response_type": "ephemeral", "text": resp.text}
+        )
         return {
             "statusCode": resp.status,
             "headers": {"Content-Type": "application/json"},
-            "body": json.dumps({"response_type": "ephemeral", "text": resp.text}),
+            "body": response_body,
         }
 
     # Fallback for unsupported payloads
     return {"statusCode": 400, "body": "Unsupported Slack payload"}
-
