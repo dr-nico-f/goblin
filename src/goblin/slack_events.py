@@ -13,6 +13,7 @@ Current supported commands (extend in commands.py):
   - filters salary [--profile nick]
 """
 
+import base64
 import hashlib
 import hmac
 import json
@@ -47,6 +48,11 @@ def _parse_slash_command(body: str) -> dict:
 def lambda_handler(event, context):
     body = event.get("body", "") or ""
     headers = event.get("headers") or {}
+    if event.get("isBase64Encoded"):
+        try:
+            body = base64.b64decode(body).decode("utf-8")
+        except Exception:
+            return {"statusCode": 400, "body": "Failed to decode body"}
 
     # Slack URL verification (events API)
     try:

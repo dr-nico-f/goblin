@@ -8,6 +8,7 @@ fetch → filter → rank → dedup → post, using per-profile configs.
 import os
 import json
 import asyncio
+from goblin import slack_events
 from goblin.config import load_sources
 from goblin.profiles import get_profile
 from goblin.filters import load_filters, matches
@@ -22,6 +23,11 @@ def _resp(status: int, body: dict):
 
 def lambda_handler(event, context):
     event = event or {}
+
+    # If this looks like a Slack request (Function URL / API GW), route to Slack handler.
+    headers = (event.get("headers") or {}) if isinstance(event, dict) else {}
+    if headers.get("X-Slack-Signature") or headers.get("x-slack-signature"):
+        return slack_events.lambda_handler(event, context)
 
     # Require Slack token; channel comes from profile config
     token = os.getenv("GOBLIN_SLACK_BOT_TOKEN")
