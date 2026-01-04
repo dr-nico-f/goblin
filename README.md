@@ -91,6 +91,18 @@ Commands (extendable in `src/goblin/commands.py`):
 - `run [--profile nick] [--source remotive] [--limit N]`
 - `run --preview` (dry-run; no Slack post, prints top matches)
 - `schedule show|set` (now backed by EventBridge via `GOBLIN_SCHEDULE_RULE`)
+- Profiles can auto-resolve from Slack: `user_map` / `channel_map` in `configs/profiles.yaml` map Slack IDs to profile names; `--profile` overrides.
+
+### Slack usage guide
+- Invite the bot to your channel: `/invite @Goblin`
+- Run commands with the slash command (e.g., `/goblin help`, `/goblin status`)
+- Profile defaults can come from Slack user/channel (`user_map` / `channel_map`), but you can override with `--profile <name>`
+- For edits:
+  - Filters: `/goblin filters show --profile nick`, `/goblin filters set salary 150000 --allow-missing false --profile nick`
+  - Ranking: `/goblin ranking show --profile nick`, `/goblin ranking set keyword_hit 1.2 --profile nick`
+  - Sources: `/goblin sources list`, `/goblin sources set remotive limit 5`
+  - Schedule: `/goblin schedule show --profile nick`, `/goblin schedule set "cron(0 14 * * ? *)" --profile nick`
+  - Run: `/goblin run --preview --profile nick --source remotive --limit 3`
 
 ### Dry run (no Slack post)
 ```bash
