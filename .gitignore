@@ -18,3 +18,4 @@ logs/
 configs/profiles.yaml
 out.json
 to_do.txt
+job_goblin_context.md

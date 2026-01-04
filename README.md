@@ -74,6 +74,22 @@ GOBLIN_SLACK_CHANNEL=C0123456789
 
 ## 🧠 Usage
 
+### Slack slash command handler (new)
+Deploy `goblin.slack_events.lambda_handler` behind an HTTPS endpoint (e.g., API Gateway) configured as a Slack Slash Command request URL.  
+Env vars required: `SLACK_SIGNING_SECRET`, `GOBLIN_SLACK_BOT_TOKEN` (for posting elsewhere).  
+Commands (extendable in `src/goblin/commands.py`):
+- `help`
+- `status [--profile nick]`
+- `filters salary [--profile nick]`
+- `filters show [--profile nick]`
+- `filters set salary <min> [--allow-missing true|false] [--profile nick]`
+- `profiles list`
+- `sources list`
+- `sources set <source> (enabled|query|category|limit) <value>`
+- `run [--profile nick] [--source remotive] [--limit N]`
+- `run --preview` (dry-run; no Slack post, prints top matches)
+- `schedule show|set` (now backed by EventBridge via `GOBLIN_SCHEDULE_RULE`)
+
 ### Dry run (no Slack post)
 ```bash
 PYTHONPATH=$PWD/src python -m goblin.cli find --source remotive --dry-run
@@ -107,12 +123,19 @@ salary:
   min: 140000          # rejects jobs whose lower-bound salary is below this
   allow_missing: false # set true to keep jobs without a salary listed
 ```
+Filters are now stored remotely when `GOBLIN_FILTERS_BUCKET` is set (S3). Env vars:
+- `GOBLIN_FILTERS_BUCKET`: S3 bucket for per-profile filter YAML (key: `<prefix>/<profile>.yaml`)
+- `GOBLIN_FILTERS_PREFIX`: optional key prefix (default: `filters`)
 
 ### Ranking (`configs/ranking.yaml`)
 Adjust the weight of keyword hits, title matches, remote bonuses, and penalties.
 
 ### Sources (`configs/sources.yaml`)
 Enable or disable job sources and set default categories, limits, and queries.
+
+### Scheduling
+Slack command `schedule set <expr>` updates the EventBridge rule in `GOBLIN_SCHEDULE_RULE`.
+Supply cron as `cron(...)` or plain 5/6-field cron (auto-wrapped). Requires IAM permissions for `events:DescribeRule` and `events:PutRule`.
 
 ---
 
