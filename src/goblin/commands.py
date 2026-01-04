@@ -320,7 +320,7 @@ def _cron_to_text(expr: str) -> str:
             return f"every hour at :{mm.zfill(2)}"
         if "/" in hh:
             step = hh.split("/")[1]
-            return f"every {step} hours at :{mm.zfill(2)} UTC"
+            return f"every {step} hours at :{mm.zfill(2)} ET"
         # convert to ET for readability
         hh_int = int(hh)
         mm_int = int(mm)
@@ -329,7 +329,7 @@ def _cron_to_text(expr: str) -> str:
         )
         et_dt = utc_dt.astimezone(ZoneInfo("America/New_York"))
         et_str = et_dt.strftime("%-I:%M %p ET")
-        return f"{et_str} ({hh}:{mm.zfill(2)} UTC)"
+        return et_str
 
     def fmt_field(val: str, label: str, names: dict | None = None) -> str:
         if val in ("*", "?"):
@@ -398,17 +398,22 @@ def _cron_to_text(expr: str) -> str:
     month_txt = fmt_field(month, "month(s)", month_names)
     year_txt = "" if not year or year == "*" else f"in year {year}"
 
-    parts_txt = [time_txt]
-    if dow not in ("*", "?"):
-        parts_txt.append(dow_txt)
-    if dom not in ("*", "?"):
-        parts_txt.append(dom_txt)
+    cadence_parts: list[str] = []
+    if dom in ("*", "?") and dow in ("*", "?"):
+        cadence_parts.append("every day")
+    elif dow not in ("*", "?"):
+        cadence_parts.append(dow_txt)
+    elif dom not in ("*", "?"):
+        cadence_parts.append(dom_txt)
     if month != "*":
-        parts_txt.append(month_txt)
+        cadence_parts.append(month_txt)
     if year_txt:
-        parts_txt.append(year_txt)
+        cadence_parts.append(year_txt)
 
-    return ", ".join(parts_txt)
+    cadence = ", ".join(cadence_parts) if cadence_parts else ""
+    if cadence:
+        return f"{time_txt}, {cadence}"
+    return time_txt
 
 
 def command_filters_set_salary(
@@ -642,9 +647,9 @@ def command_schedule_show() -> CommandResult:
             )
         friendly = _cron_to_text(expr)
         txt = (
-            f"*Schedule:* {friendly}\n"
+            f"*Schedule:* Runs {friendly}\n"
             f"*Rule name:* `{rule_name}`\n"
-            f"*Cron schedule:* `{expr}`"
+            f"*Cron expression:* `{expr}`"
         )
         blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": txt}}]
         return CommandResult(text=txt, blocks=blocks)
@@ -894,7 +899,7 @@ def handle_command(
                     )
                 friendly = _cron_to_text(expr)
                 txt = (
-                    f"*Schedule:* {friendly}\n"
+                    f"*Schedule:* Runs {friendly}\n"
                     f"*Rule name:* `{rule_name}`\n"
                     f"*Cron schedule:* `{expr}`"
                 )
