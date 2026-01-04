@@ -70,3 +70,35 @@ def save_profile_filters(profile: str, data: dict, fallback_path: Optional[str] 
     except ClientError as e:
         raise FilterStoreError(f"Failed to save filters: {e}") from e
 
+
+def load_profile_ranking(profile: str, fallback_path: Optional[str] = None) -> dict:
+    table = None
+    try:
+        table = _table()
+        resp = table.get_item(Key={_pk_name(): profile})
+        item = resp.get("Item") or {}
+        data = item.get("ranking") or {}
+        return data if isinstance(data, dict) else {}
+    except FilterStoreError:
+        return _load_local(fallback_path)
+    except ClientError:
+        return _load_local(fallback_path)
+
+
+def save_profile_ranking(profile: str, data: dict, fallback_path: Optional[str] = None) -> None:
+    try:
+        table = _table()
+    except FilterStoreError:
+        _save_local(fallback_path, data)
+        return
+
+    try:
+        table.update_item(
+            Key={_pk_name(): profile},
+            UpdateExpression="SET #r = :r",
+            ExpressionAttributeNames={"#r": "ranking"},
+            ExpressionAttributeValues={":r": data},
+        )
+    except ClientError as e:
+        raise FilterStoreError(f"Failed to save ranking: {e}") from e
+

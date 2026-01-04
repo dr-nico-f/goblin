@@ -12,8 +12,8 @@ from goblin import slack_events
 from goblin.filter_store import load_profile_filters
 from goblin.config import load_sources
 from goblin.profiles import get_profile
-from goblin.filters import load_filters, matches
-from goblin.rank import load_weights, score as score_job
+from goblin.filters import matches
+from goblin.rank import load_profile_weights, score as score_job
 from goblin.dedup import load_seen, save_seen, fingerprint, cache_file
 from goblin.slack import post_blocks, job_to_blocks
 from goblin.collectors.remotive import fetch_remotive
@@ -68,7 +68,7 @@ def lambda_handler(event, context):
 
     # Filter + score
     filters = load_profile_filters(profile, filt_path)
-    weights = load_weights(rank_path)
+    weights = load_profile_weights(profile, rank_path)
     matched = [j for j in jobs if matches(j, filters)]
     scored = [(score_job(j, filters, weights), j) for j in matched]
     scored.sort(key=lambda x: x[0], reverse=True)

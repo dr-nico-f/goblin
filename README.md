@@ -83,6 +83,8 @@ Commands (extendable in `src/goblin/commands.py`):
 - `filters salary [--profile nick]`
 - `filters show [--profile nick]`
 - `filters set salary <min> [--allow-missing true|false] [--profile nick]`
+- `ranking show [--profile nick]`
+- `ranking set <weight> <value> [--profile nick]`
 - `profiles list`
 - `sources list`
 - `sources set <source> (enabled|query|category|limit) <value>`

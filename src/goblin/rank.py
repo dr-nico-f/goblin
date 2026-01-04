@@ -1,11 +1,17 @@
 from typing import Dict
 from goblin.model import Job
 import yaml
+from goblin.filter_store import load_profile_ranking
 
 def load_weights(path="configs/ranking.yaml") -> Dict[str, float]:
     with open(path, "r") as f:
         data = yaml.safe_load(f) or {}
     return (data.get("weights") or {})
+
+
+def load_profile_weights(profile: str, fallback_path="configs/ranking.yaml") -> Dict[str, float]:
+    data = load_profile_ranking(profile, fallback_path) or {}
+    return data.get("weights") or data or {}
 
 REMOTE_SYNS = ("remote", "anywhere", "worldwide", "global")
 

@@ -8,6 +8,8 @@ Current commands (extendable):
   - filters show [--profile PROFILE]
   - filters salary [--profile PROFILE]                # view salary filter
   - filters set salary <min> [--allow-missing true|false] [--profile PROFILE]
+  - ranking show [--profile PROFILE]
+  - ranking set <weight> <value> [--profile PROFILE]
   - profiles list
   - sources list
   - schedule show
@@ -25,10 +27,15 @@ from goblin.collectors.remotive import fetch_remotive
 from goblin.config import load_sources
 from goblin.dedup import cache_file, fingerprint, load_seen, save_seen
 from goblin.fetch import fetch_stub
-from goblin.filter_store import load_profile_filters, save_profile_filters
+from goblin.filter_store import (
+    load_profile_filters,
+    save_profile_filters,
+    load_profile_ranking,
+    save_profile_ranking,
+)
 from goblin.filters import matches
 from goblin.profiles import get_profile, load_profiles
-from goblin.rank import load_weights, score as score_job
+from goblin.rank import load_profile_weights, score as score_job
 from goblin.schedule import ScheduleError, get_schedule, set_schedule
 from goblin.slack import job_to_blocks, post_blocks
 
@@ -96,6 +103,8 @@ def command_help() -> CommandResult:
         "• `filters salary [--profile nick]` — show salary filter",
         "• `filters set salary <min> [--allow-missing true|false] "
         "[--profile nick]`",
+        "• `ranking show [--profile nick]` — show ranking weights",
+        "• `ranking set <weight> <value> [--profile nick]` — update weight",
         "• `profiles list` — list available profiles",
         "• `sources list` — list configured sources",
         "• `schedule show|set` — view or note schedule (stub)",
@@ -310,6 +319,60 @@ def command_filters_set_salary(args: List[str]) -> CommandResult:
     return CommandResult(text=txt, blocks=blocks)
 
 
+def command_ranking_show(args: List[str]) -> CommandResult:
+    profile_name = _get_profile_name(args)
+    prof = get_profile(profile_name)
+    if not prof:
+        return CommandResult(
+            text=f"Unknown profile `{profile_name}`",
+            status=400,
+        )
+    rank_path = prof.get("ranking", "configs/ranking.yaml")
+    weights = load_profile_weights(profile_name, rank_path)
+    lines = [f"*Profile*: {profile_name}", "*Ranking weights*:"]
+    for k, v in sorted(weights.items()):
+        lines.append(f"- {k}: {v}")
+    txt = "\n".join(lines)
+    blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": txt}}]
+    return CommandResult(text=txt, blocks=blocks)
+
+
+def command_ranking_set(args: List[str]) -> CommandResult:
+    if len(args) < 2:
+        return CommandResult(
+            text="Usage: ranking set <weight> <value> [--profile nick]",
+            status=400,
+        )
+    weight_key = args[0]
+    try:
+        weight_val = float(args[1])
+    except ValueError:
+        return CommandResult(
+            text="Value must be a number",
+            status=400,
+        )
+    profile_name = _get_profile_name(args)
+    prof = get_profile(profile_name)
+    if not prof:
+        return CommandResult(
+            text=f"Unknown profile `{profile_name}`",
+            status=400,
+        )
+    rank_path = prof.get("ranking", "configs/ranking.yaml")
+    data = load_profile_ranking(profile_name, rank_path)
+    weights = data.get("weights") or {}
+    weights[weight_key] = weight_val
+    data["weights"] = weights
+    save_profile_ranking(profile_name, data, rank_path)
+
+    lines = [f"*Profile*: {profile_name}", "*Ranking weights*:"]
+    for k, v in sorted(weights.items()):
+        lines.append(f"- {k}: {v}")
+    txt = "\n".join(lines)
+    blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": txt}}]
+    return CommandResult(text=txt, blocks=blocks)
+
+
 def command_profiles_list() -> CommandResult:
     profiles = (load_profiles().get("profiles") or {}).keys()
     if not profiles:
@@ -453,7 +516,7 @@ def command_run(args: List[str]) -> CommandResult:
         )
 
     filters = load_profile_filters(profile_name, filt_path)
-    weights = load_weights(rank_path)
+    weights = load_profile_weights(profile_name, rank_path)
     matched = [j for j in jobs if matches(j, filters)]
     scored = [(score_job(j, filters, weights), j) for j in matched]
     scored.sort(key=lambda x: x[0], reverse=True)
@@ -567,6 +630,18 @@ def handle_command(text: str) -> CommandResult:
 
     if cmd == "profiles" and args and args[0].lower() == "list":
         return command_profiles_list()
+
+    if cmd == "ranking" and args:
+        sub = args[0].lower()
+        sub_args = args[1:]
+        if sub == "show":
+            return command_ranking_show(sub_args)
+        if sub == "set":
+            return command_ranking_set(sub_args)
+        return CommandResult(
+            text=f"Unknown ranking subcommand `{sub}`",
+            status=400,
+        )
 
     if cmd == "sources" and args and args[0].lower() == "list":
         return command_sources_list()
