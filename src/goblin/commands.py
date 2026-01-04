@@ -18,6 +18,8 @@ Current commands (extendable):
 
 import asyncio
 import os
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -149,14 +151,16 @@ def command_status(
     filt_path = prof.get("filters", "configs/filters.yaml")
     filters = load_profile_filters(profile_name, filt_path)
 
+    profile_label = profile_name.title()
+    source_label = "Remotive"
     lines = [
-        f"*Profile*: {profile_name}",
+        f"*Profile*: {profile_label}",
         f"*Channel*: {prof.get('channel', 'unset')}",
-        "*Default source*: remotive "
+        f"*Default source*: *{source_label}* "
         f"(limit={remotive_cfg.get('limit', 'n/a')}, "
         f"category={remotive_cfg.get('category', 'n/a')}, "
         f"query='{remotive_cfg.get('query', '')}')",
-        _format_salary_info(filters),
+        f"*{_format_salary_info(filters)}*",
     ]
     blocks = [
         {
@@ -317,7 +321,15 @@ def _cron_to_text(expr: str) -> str:
         if "/" in hh:
             step = hh.split("/")[1]
             return f"every {step} hours at :{mm.zfill(2)} UTC"
-        return f"{hh}:{mm.zfill(2)} UTC"
+        # convert to ET for readability
+        hh_int = int(hh)
+        mm_int = int(mm)
+        utc_dt = datetime.now(timezone.utc).replace(
+            hour=hh_int, minute=mm_int, second=0, microsecond=0
+        )
+        et_dt = utc_dt.astimezone(ZoneInfo("America/New_York"))
+        et_str = et_dt.strftime("%-I:%M %p ET")
+        return f"{et_str} ({hh}:{mm.zfill(2)} UTC)"
 
     def fmt_field(val: str, label: str, names: dict | None = None) -> str:
         if val in ("*", "?"):
