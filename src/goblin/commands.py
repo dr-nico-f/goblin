@@ -51,7 +51,7 @@ class CommandResult:
 
 def _get_profile_name(
     args: List[str],
-    default: str = "Nick",
+    default: str = "nick",
     user_id: str | None = None,
     channel_id: str | None = None,
 ) -> str:
@@ -77,6 +77,10 @@ def _format_salary_info(filters: dict) -> str:
         f"min=${min_salary:,} "
         f"(allow_missing={allow_missing})"
     )
+
+
+def _display_profile(name: str) -> str:
+    return name.title()
 
 
 def _fmt_list(title: str, items: list) -> str:
@@ -151,7 +155,7 @@ def command_status(
     filt_path = prof.get("filters", "configs/filters.yaml")
     filters = load_profile_filters(profile_name, filt_path)
 
-    profile_label = profile_name.title()
+    profile_label = _display_profile(profile_name)
     source_label = "Remotive"
     lines = [
         f"*Profile*: {profile_label}",
@@ -185,6 +189,7 @@ def command_filters_salary(
         user_id=user_id,
         channel_id=channel_id,
     )
+    profile_label = _display_profile(profile_name)
     prof = get_profile(profile_name)
     if not prof:
         return CommandResult(
@@ -199,7 +204,7 @@ def command_filters_salary(
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"*Profile*: {profile_name}\n{txt}",
+                "text": f"*Profile*: {profile_label}\n{txt}",
             },
         }
     ]
@@ -216,6 +221,7 @@ def command_filters_show(
         user_id=user_id,
         channel_id=channel_id,
     )
+    profile_label = _display_profile(profile_name)
     prof = get_profile(profile_name)
     if not prof:
         return CommandResult(
@@ -228,7 +234,7 @@ def command_filters_show(
     keywords = filters.get("keywords", {}) or {}
     locations = filters.get("locations", {}) or {}
     parts = [
-        f"*Profile*: {profile_name}",
+        f"*Profile*: {profile_label}",
         _fmt_list("Titles include", titles.get("include") or []),
         _fmt_list("Titles exclude", titles.get("exclude") or []),
         _fmt_list("Keywords include", keywords.get("include") or []),
@@ -478,13 +484,14 @@ def command_filters_set_salary(
     data["salary"] = salary_cfg
     save_profile_filters(profile_name, data, filt_path)
 
+    profile_label = _display_profile(profile_name)
     txt = _format_salary_info(data)
     blocks = [
         {
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"*Profile*: {profile_name}\n{txt}",
+                "text": f"*Profile*: {profile_label}\n{txt}",
             },
         }
     ]
@@ -501,6 +508,7 @@ def command_ranking_show(
         user_id=user_id,
         channel_id=channel_id,
     )
+    profile_label = _display_profile(profile_name)
     prof = get_profile(profile_name)
     if not prof:
         return CommandResult(
@@ -509,7 +517,7 @@ def command_ranking_show(
         )
     rank_path = prof.get("ranking", "configs/ranking.yaml")
     weights = load_profile_weights(profile_name, rank_path)
-    lines = [f"*Profile*: {profile_name}", "*Ranking weights*:"]
+    lines = [f"*Profile*: {profile_label}", "*Ranking weights*:"]
     for k, v in sorted(weights.items()):
         lines.append(f"- {k}: {v}")
     txt = "\n".join(lines)
@@ -540,6 +548,7 @@ def command_ranking_set(
         user_id=user_id,
         channel_id=channel_id,
     )
+    profile_label = _display_profile(profile_name)
     prof = get_profile(profile_name)
     if not prof:
         return CommandResult(
@@ -553,7 +562,7 @@ def command_ranking_set(
     data["weights"] = weights
     save_profile_ranking(profile_name, data, rank_path)
 
-    lines = [f"*Profile*: {profile_name}", "*Ranking weights*:"]
+    lines = [f"*Profile*: {profile_label}", "*Ranking weights*:"]
     for k, v in sorted(weights.items()):
         lines.append(f"- {k}: {v}")
     txt = "\n".join(lines)
@@ -745,7 +754,8 @@ def command_run(
         )
 
     if preview:
-        lines = [f"[{profile_name}] Preview (no post)."]
+        profile_label = _display_profile(profile_name)
+        lines = [f"[{profile_label}] Preview (no post)."]
         for s, j in new[:5]:
             lines.append(f"{s:>4.1f}  {j.title} · {j.company} · {j.location}")
         if len(new) > 5:
@@ -757,7 +767,11 @@ def command_run(
             "type": "header",
             "text": {
                 "type": "plain_text",
-                "text": f"Goblin: {source} matches ({profile_name})",
+                "text": (
+                    "Goblin: "
+                    f"{source} matches "
+                    f"({_display_profile(profile_name)})"
+                ),
             },
         }
     ]
@@ -778,8 +792,10 @@ def command_run(
 
     return CommandResult(
         text=(
-            f"[{profile_name}] Posted {len(new)} new job(s). "
-            f"fetched={len(jobs)} matched={len(matched)} new={len(new)}"
+            f"[{_display_profile(profile_name)}] "
+            f"Posted {len(new)} new job(s). "
+            f"fetched={len(jobs)} matched={len(matched)} "
+            f"new={len(new)}"
         ),
         blocks=[
             {
@@ -787,7 +803,8 @@ def command_run(
                 "text": {
                     "type": "mrkdwn",
                     "text": (
-                        f"[{profile_name}] Posted {len(new)} new job(s).\n"
+                        f"[{_display_profile(profile_name)}] "
+                        f"Posted {len(new)} new job(s).\n"
                         f"fetched={len(jobs)} matched={len(matched)} "
                         f"new={len(new)}"
                     ),
