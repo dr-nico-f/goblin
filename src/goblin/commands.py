@@ -640,7 +640,12 @@ def command_schedule_show() -> CommandResult:
             return CommandResult(
                 text=f"Schedule not set for rule `{rule_name}`."
             )
-        txt = f"Rule `{rule_name}` schedule: `{expr}`\n{_cron_to_text(expr)}"
+        friendly = _cron_to_text(expr)
+        txt = (
+            f"*Schedule:* {friendly}\n"
+            f"*Rule name:* `{rule_name}`\n"
+            f"*Cron schedule:* `{expr}`"
+        )
         blocks = [{"type": "section", "text": {"type": "mrkdwn", "text": txt}}]
         return CommandResult(text=txt, blocks=blocks)
     except ScheduleError as e:
@@ -887,9 +892,11 @@ def handle_command(
                     return CommandResult(
                         text=f"Schedule not set for rule `{rule_name}`."
                     )
+                friendly = _cron_to_text(expr)
                 txt = (
-                    f"Rule `{rule_name}` schedule: `{expr}`\n"
-                    f"{_cron_to_text(expr)}"
+                    f"*Schedule:* {friendly}\n"
+                    f"*Rule name:* `{rule_name}`\n"
+                    f"*Cron schedule:* `{expr}`"
                 )
                 blocks = [
                     {
