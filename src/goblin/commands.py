@@ -12,8 +12,8 @@ Current commands (extendable):
   - ranking set <weight> <value> [--profile PROFILE]
   - profiles list
   - sources list
-  - schedule show
-  - schedule set <expr>   (stub; informational only)
+  - schedule show [--profile PROFILE]
+  - schedule set <expr> [--profile PROFILE]
 """
 
 import asyncio

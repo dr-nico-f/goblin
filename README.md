@@ -18,15 +18,15 @@ Now it runs on a schedule, supports multiple profiles, and is fully controllable
 ---
 
 ## 🚀 Features
-- 🔍 Live job fetching from [Remotive](https://remotive.com/api/remote-jobs)
-- 🧩 Keyword, title, and location filters via YAML configs
-- ⚖️ Ranking system with customizable weights
-- 🧠 Deduplication to prevent reposts
-- 🪵 Rotating log files for all runs
-- 🔐 `.env`-based secrets loading (no manual exports)
-- 🧪 Health-check command to verify Slack connectivity
-- 🧾 Rich Slack cards (job type, salary, publish date, tags when available)
-- 🏗️ Modular design ready for AWS Lambda + EventBridge automation
+- Live job fetching from [Remotive](https://remotive.com/api/remote-jobs)
+- Keyword, title, and location filters via YAML configs
+- Ranking system with customizable weights
+- Deduplication to prevent reposts
+- Rotating log files for all runs
+- `.env`-based secrets loading (no manual exports)
+- Health-check command to verify Slack connectivity
+- Rich Slack cards (job type, salary, publish date, tags when available)
+- Modular design ready for AWS Lambda + EventBridge automation
 
 ---
 
@@ -92,7 +92,7 @@ GOBLIN_SLACK_CHANNEL=C0123456789
 
 ## 🧠 Usage
 
-### Slack slash command handler (new)
+### Slack slash command handler
 Deploy `goblin.slack_events.lambda_handler` behind an HTTPS endpoint (e.g., API Gateway) configured as a Slack Slash Command request URL.  
 Env vars required: `SLACK_SIGNING_SECRET`, `GOBLIN_SLACK_BOT_TOKEN` (for posting elsewhere).  
 Commands (extendable in `src/goblin/commands.py`):
@@ -108,7 +108,7 @@ Commands (extendable in `src/goblin/commands.py`):
 - `sources set <source> (enabled|query|category|limit) <value>`
 - `run [--profile nick] [--source remotive] [--limit N]`
 - `run --preview` (dry-run; no Slack post, prints top matches)
-- `schedule show|set` (now backed by EventBridge via `GOBLIN_SCHEDULE_RULE`)
+- `schedule show|set` (backed by EventBridge via `GOBLIN_SCHEDULE_RULE`)
 - Profiles can auto-resolve from Slack: `user_map` / `channel_map` in `configs/profiles.yaml` map Slack IDs to profile names; `--profile` overrides.
 
 ### Slack usage guide
@@ -155,7 +155,7 @@ salary:
   min: 140000          # rejects jobs whose lower-bound salary is below this
   allow_missing: false # set true to keep jobs without a salary listed
 ```
-Filters are now stored remotely in DynamoDB when `GOBLIN_FILTERS_TABLE` is set. Env vars:
+Filters can be stored remotely in DynamoDB when `GOBLIN_FILTERS_TABLE` is set. Env vars:
 - `GOBLIN_FILTERS_TABLE`: DynamoDB table name
 - `GOBLIN_FILTERS_PK`: partition key name (default: `profile`)
 
@@ -203,7 +203,7 @@ Goblin runs serverlessly on **AWS Lambda** with scheduling via **EventBridge**.
 ---
 
 ## 📜 License
-MIT © 2025 — Goblin Labs  
+MIT © 2025–2026 — Goblin Labs  
 Created by [Nico](https://github.com/dr-nico-f)
 
 ---
