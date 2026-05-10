@@ -160,10 +160,23 @@ Supply cron as `cron(...)` or plain 5/6-field cron (auto-wrapped). Requires IAM 
 
 ---
 
-## 🧪 Development Notes
-- Requires **Python 3.10+**
-- Uses `httpx`, `click`, `pyyaml`, and `python-dotenv`
-- Tested locally with virtualenv and Slack bot tokens
+## 🧪 Testing
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
+The test suite covers filtering logic, salary parsing, scoring/ranking, deduplication,
+Slack block rendering, signature verification, command routing, profile resolution,
+config loading, and schedule normalization — **162 tests**.
+
+---
+
+## 🛠️ Development Notes
+- Requires **Python 3.10+** (developed on 3.12)
+- Packaging via `pyproject.toml`; install with `pip install -e ".[dev]"`
+- Uses `httpx`, `click`, `pyyaml`, `python-dotenv`, and `boto3`
 - Logs and local caches are ignored via `.gitignore`
 
 ---

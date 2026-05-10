@@ -26,6 +26,9 @@ configs/sources_*.yaml
 # Local archive of personal configs
 .local-archive/
 
+# Test / build caches
+.pytest_cache/
+
 # Misc
 to_do.txt
 job_goblin_context.md
