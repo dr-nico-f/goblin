@@ -6,6 +6,17 @@ Built with **Python 3.10+**, **AWS**, and the **Slack API**.
 
 ---
 
+## 💡 Why I Built This
+I got tired of manually checking job boards every day, scanning the same listings, and losing track of what I'd already seen.
+So I built a bot to do it for me — fetch listings, filter out the noise, rank what's left, and drop the best matches into Slack where I'd actually see them.
+
+To be clear: Goblin is a **discovery** tool, not an application tool. It surfaces relevant listings so I can review them and apply personally — it doesn't generate or submit applications.
+
+It started as a quick script and grew into a full serverless pipeline once I realized other people wanted their own filters too.
+Now it runs on a schedule, supports multiple profiles, and is fully controllable from Slack.
+
+---
+
 ## 🚀 Features
 - 🔍 Live job fetching from [Remotive](https://remotive.com/api/remote-jobs)
 - 🧩 Keyword, title, and location filters via YAML configs
