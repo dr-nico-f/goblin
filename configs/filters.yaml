@@ -1,5 +1,5 @@
 titles:
-  include: ["Engineer", "Developer", "Software", "Data", "DevOps", "ML", "Integration", "Backend", "Python", "AI", "Senior", "Architect", "Solutions", "Technical"]
+  include: ["Engineer", "Developer", "Software", "Data", "DevOps", "ML", "Integration", "Backend", "Frontend", "Fullstack", "Python", "AI", "Senior", "Architect", "Solutions", "Technical", "Lead", "Manager", "Analyst", "Platform", "Cloud", "Infrastructure", "SRE"]
   exclude: ["Intern", "Junior"]
 
 keywords:
@@ -19,6 +19,12 @@ keywords:
     - engineer
     - data
     - devops
+    - cloud
+    - infrastructure
+    - platform
+    - kubernetes
+    - docker
+    - terraform
 
   exclude:
     - php
@@ -32,10 +38,11 @@ locations:
     - USA
     - United States
     - Americas
+    - North America
+    - Canada
   exclude:
     - Onsite Only
-    - Europe
 
 salary:
-  min: 100000            # adjust to your preference
-  allow_missing: false
+  min: 160000            # adjust to your preference
+  allow_missing: true    # most listings don't include salary

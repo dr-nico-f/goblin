@@ -2,7 +2,7 @@ sources:
   remotive:
     enabled: true
     category: software-dev
-    limit: 25
+    limit: 50
     query: ""
   stub:
     enabled: false
