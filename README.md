@@ -9,13 +9,12 @@ Built with **Python 3.10+**, **AWS**, and the **Slack API**.
 ---
 
 ## 💡 Motivation
-I got tired of manually checking job boards every day, scanning the same listings, and losing track of what I'd already seen.
-So I built a bot to do it for me — fetch listings, filter out the noise, rank what's left, and drop the best matches into Slack where I'd actually see them.
+Manually checking job boards daily is tedious, repetitive, and easy to fall behind on.
+Goblin automates that process — it fetches listings, excludes irrelevant results, scores what remains, and surfaces the top matches in Slack.
 
-To be clear: Goblin is a **discovery** tool, not an application tool. It surfaces relevant listings so I can review them and apply personally — it doesn't generate or submit applications.
+Goblin is a **discovery** tool, not an application tool. It surfaces relevant listings for manual review — it does not generate or submit applications.
 
-It started as a quick script and grew into a full serverless pipeline once I realized other people wanted their own filters too.
-Now it runs on a schedule, supports multiple profiles, and is fully controllable from Slack.
+What started as a single-purpose script evolved into a full serverless pipeline with multi-user support, per-profile configurations, scheduled runs via EventBridge, and a Slack-based command interface.
 
 ---
 
@@ -28,7 +27,7 @@ Now it runs on a schedule, supports multiple profiles, and is fully controllable
 - `.env`-based secrets loading (no manual exports)
 - Health-check command to verify Slack connectivity
 - Rich Slack cards (job type, salary, publish date, tags when available)
-- Modular design ready for AWS Lambda + EventBridge automation
+- Modular architecture designed for AWS Lambda + EventBridge automation
 
 ---
 
@@ -76,7 +75,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-*(Optional)* Install the package in editable mode so you can skip setting `PYTHONPATH` for every command:
+*(Optional)* Install in editable mode to avoid setting `PYTHONPATH` manually:
 ```bash
 pip install -e .
 ```
@@ -151,7 +150,7 @@ All runs are logged to `logs/goblin.log`.
 
 ### Filters (`configs/filters.yaml`)
 Control which titles, keywords, and locations Goblin includes or excludes.
-You can also add optional salary gating, e.g.:
+Optional salary gating is also supported:
 ```
 salary:
   min: 140000          # rejects jobs whose lower-bound salary is below this
@@ -197,7 +196,7 @@ config loading, and schedule normalization — **178 tests**.
 ---
 
 ## ☁️ AWS Deployment
-Goblin runs serverlessly on **AWS Lambda** with scheduling via **EventBridge**.
+Goblin runs as a serverless pipeline on **AWS Lambda** with scheduling via **EventBridge**.
 - **GitHub Actions** auto-deploys to Lambda on push to `main` (`.github/workflows/deploy.yml`)
 - **OIDC** authentication — no static AWS keys in CI
 - **DynamoDB** stores per-profile filters and ranking weights
