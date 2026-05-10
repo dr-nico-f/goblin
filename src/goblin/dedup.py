@@ -1,4 +1,6 @@
-import json, os, hashlib
+import hashlib
+import json
+import os
 from typing import Set
 
 def _ensure_dirs(path: str):
@@ -29,7 +31,6 @@ def load_seen(cache_path: str) -> Set[str]:
 def save_seen(cache_path: str, seen: Set[str]) -> None:
     _write(cache_path, seen)
 
-# NEW: build a writable cache file path based on env
 def cache_file(profile: str) -> str:
     base = os.environ.get("GOBLIN_CACHE_DIR", "data")  # "data" locally, "/tmp/goblin" on Lambda
     return os.path.join(base, profile, "posted.json")

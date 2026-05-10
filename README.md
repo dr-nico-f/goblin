@@ -76,7 +76,7 @@ pip install -r requirements.txt
 
 *(Optional)* Install the package in editable mode so you can skip setting `PYTHONPATH` for every command:
 ```bash
-pip install -e src
+pip install -e .
 ```
 
 ### 2. Environment variables  
@@ -138,7 +138,7 @@ PYTHONPATH=$PWD/src python -m goblin.cli test
 ```
 
 Tip: override the default fetch limit for an ad-hoc run with `--limit`, e.g. `--limit 5`.
-If you installed with `pip install -e src`, you can omit the `PYTHONPATH=$PWD/src` prefix in the examples above.
+If you installed with `pip install -e .`, you can omit the `PYTHONPATH=$PWD/src` prefix in the examples above.
 
 ### Logs
 All runs are logged to `logs/goblin.log`.

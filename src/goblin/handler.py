@@ -35,7 +35,7 @@ def lambda_handler(event, context):
     if not token:
         return _resp(500, {"error": "Missing env var GOBLIN_SLACK_BOT_TOKEN"})
 
-    # Profile (e.g., "nick", "nina")
+    # Profile (e.g., "nick", "bob")
     profile = event.get("profile", "nick")
     prof = get_profile(profile)
     if not prof:
@@ -96,7 +96,7 @@ def lambda_handler(event, context):
     asyncio.run(post_blocks(blocks, text=f"Goblin {source} update ({profile})",
                             channel_override=channel_id))
 
-    # Persist fingerprints (local JSON now; DynamoDB later)
+    # Persist fingerprints
     for _, j in new:
         seen.add(fingerprint(j.title, j.company, j.url))
     save_seen(cache_path, seen)
