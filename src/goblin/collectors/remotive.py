@@ -1,9 +1,12 @@
-import httpx, time
+import httpx
+import logging
+import time
 from typing import List, Dict, Any
+
 from goblin.model import Job
 
 REMOTIVE_API = "https://remotive.com/api/remote-jobs"
-USER_AGENT = "GoblinJobBot/0.1 (+https://github.com/you/goblin)"
+USER_AGENT = "GoblinJobBot/0.1 (+https://github.com/dr-nico-f/goblin)"
 
 def _get_with_retries(url: str, params: Dict[str, Any], timeout=15, retries=3, backoff=0.75):
     last_exc = None
@@ -30,7 +33,9 @@ def fetch_remotive(query: str = "", category: str = "software-dev", limit: int =
     r = _get_with_retries(REMOTIVE_API, params=params)
     data = r.json()
     jobs_raw = data.get("jobs") or []
-    print(f"[remotive] url={r.url} job-count={data.get('job-count')} returned={len(jobs_raw)}")
+    logging.getLogger("goblin").info(
+        "url=%s job-count=%s returned=%d", r.url, data.get("job-count"), len(jobs_raw)
+    )
 
     jobs: List[Job] = []
     for item in jobs_raw[:limit]:

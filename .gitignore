@@ -2,11 +2,11 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.venv
-.env
-data/
 .venv/
+.env
+.env.*
 .envrc
+data/
 .DS_Store
 .idea/
 .vscode/
@@ -15,7 +15,20 @@ build/
 .eggs/
 *.egg-info/
 logs/
-configs/profiles.yaml
 out.json
+
+# Personal / per-user config (keep profiles.example.yaml as the public template)
+configs/profiles.yaml
+configs/filters_*.yaml
+configs/ranking_*.yaml
+configs/sources_*.yaml
+
+# Local archive of personal configs
+.local-archive/
+
+# Misc
 to_do.txt
 job_goblin_context.md
+*.pem
+*.key
+*.p12

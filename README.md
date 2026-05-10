@@ -22,25 +22,32 @@ Built with **Python 3.10+**, **AWS**, and the **Slack API**.
 ## 🧱 Project Structure
 ```
 src/goblin/
-  cli.py              → Main CLI interface
-  collectors/         → Job source modules (Remotive, etc.)
-  config.py           → Loads YAML configuration files
-  dedup.py            → Local cache to avoid duplicate posts
-  filters.py          → Job filtering logic
-  rank.py             → Scoring and ranking
-  slack.py            → Slack posting functions
+  cli.py              → Click CLI (find, pull-remotive, score-remotive, test)
+  handler.py          → AWS Lambda entrypoint (scheduled + Slack routing)
+  slack_events.py     → Slack slash-command handler with signature verification
+  commands.py         → Command dispatcher (help, status, run, filters, etc.)
+  model.py            → Job dataclass
+  collectors/
+    remotive.py       → Remotive API client with retry/backoff
+  config.py           → YAML config loader
+  profiles.py         → Multi-profile support (Slack user/channel mapping)
+  filters.py          → Job filtering (titles, keywords, locations, salary)
+  filter_store.py     → DynamoDB-backed filter/ranking storage with local fallback
+  rank.py             → Weighted scoring engine
+  dedup.py            → SHA-256 fingerprint dedup cache
+  schedule.py         → EventBridge schedule management
+  fetch.py            → Stub source for testing
+  slack.py            → Slack Block Kit message builder + poster
   util/log.py         → Rotating file and console logging
 
 configs/
-  filters.yaml        → Filter rules for job titles, keywords, locations
-  ranking.yaml        → Scoring weights
+  filters.yaml        → Example filter rules (titles, keywords, locations, salary)
+  ranking.yaml        → Example scoring weights
   sources.yaml        → Source defaults and limits
+  profiles.example.yaml → Template for per-user profiles
 
-data/
-  posted.json         → Local dedup cache
-
-logs/
-  goblin.log          → Rotating runtime logs
+.github/workflows/
+  deploy.yml          → CI/CD: auto-deploy to AWS Lambda on push to main
 ```
 
 ---
@@ -49,7 +56,7 @@ logs/
 
 ### 1. Clone and create a virtual environment
 ```bash
-git clone https://github.com/<your-username>/goblin.git
+git clone https://github.com/dr-nico-f/goblin.git
 cd goblin
 python -m venv .venv
 source .venv/bin/activate
@@ -161,12 +168,13 @@ Supply cron as `cron(...)` or plain 5/6-field cron (auto-wrapped). Requires IAM 
 
 ---
 
-## ☁️ AWS Deployment (coming soon)
-Goblin is designed to run serverlessly on **AWS Lambda** with a daily schedule via **EventBridge**.  
-Planned features:
-- GitHub Actions for automatic Lambda deployment  
-- Secrets stored in AWS Parameter Store or Secrets Manager  
-- Optional DynamoDB dedup cache  
+## ☁️ AWS Deployment
+Goblin runs serverlessly on **AWS Lambda** with scheduling via **EventBridge**.
+- **GitHub Actions** auto-deploys to Lambda on push to `main` (`.github/workflows/deploy.yml`)
+- **OIDC** authentication — no static AWS keys in CI
+- **DynamoDB** stores per-profile filters and ranking weights
+- **EventBridge** rules manage cron schedules, editable via Slack
+- Secrets are injected as Lambda environment variables from GitHub Actions secrets
 
 ---
 

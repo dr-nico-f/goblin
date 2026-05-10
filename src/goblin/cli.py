@@ -1,47 +1,38 @@
-import asyncio, click, os, sys
+import asyncio
+
+import click
 from dotenv import load_dotenv
+
 from goblin.util.log import setup_logging
-from goblin.slack import post_blocks, job_to_blocks
-from goblin.filters import load_filters, matches
-from goblin.fetch import fetch_stub
-from goblin.dedup import load_seen, save_seen, fingerprint
 
 
-# Load .env before anything else
 load_dotenv()
 
-# Initialize rotating logger
 log = setup_logging()
 
-def require_env(var):
-    v = os.environ.get(var)
-    if not v:
-        click.echo(f"[ERROR] Missing env var: {var}", err=True)
-        sys.exit(1)
-    return v
+DEFAULT_LIMIT = 10
+
 
 @click.group()
 def cli():
     """Goblin command-line interface."""
     pass
 
-DEFAULT_LIMIT = 10
 
 @cli.command()
-@click.option("--source", default="stub", type=click.Choice(["stub","remotive"]), show_default=True)
+@click.option("--source", default="stub", type=click.Choice(["stub", "remotive"]), show_default=True)
 @click.option("--limit", type=int, default=None, help=f"Max jobs to fetch (falls back to config or {DEFAULT_LIMIT})")
 @click.option("--dry-run", is_flag=True)
 @click.option("--profile", default="nick", show_default=True, help="Profile name from configs/profiles.yaml")
 def find(source, limit, dry_run, profile):
-    from goblin.config import load_sources
-    from goblin.profiles import get_profile
-    from goblin.filters import load_filters, matches
-    from goblin.rank import load_weights, score as score_job
-    from goblin.dedup import load_seen, save_seen, fingerprint, cache_file
     from goblin.collectors.remotive import fetch_remotive
+    from goblin.config import load_sources
+    from goblin.dedup import cache_file, fingerprint, load_seen, save_seen
     from goblin.fetch import fetch_stub
-    from goblin.slack import post_blocks, job_to_blocks
-    import asyncio, click, os
+    from goblin.filters import load_filters, matches
+    from goblin.profiles import get_profile
+    from goblin.rank import load_weights, score as score_job
+    from goblin.slack import job_to_blocks, post_blocks
 
     prof = get_profile(profile)
     if not prof:
@@ -147,9 +138,8 @@ def score_remotive(limit):
 @click.option("--message", default="Goblin test ✅", show_default=True)
 def test(message):
     """Post a simple health-check message and one fake job card to Slack."""
-    import asyncio
     from goblin.model import Job
-    from goblin.slack import post_blocks, job_to_blocks
+    from goblin.slack import job_to_blocks, post_blocks
 
     j = Job(
         id="healthcheck-1",

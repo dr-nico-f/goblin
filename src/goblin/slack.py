@@ -1,23 +1,7 @@
-import os, httpx, asyncio
+import os
+import httpx
 from typing import List, Dict
-from goblin.model import Job
 
-async def post_to_slack(text: str):
-    token = os.environ.get("GOBLIN_SLACK_BOT_TOKEN")
-    channel = os.environ.get("GOBLIN_SLACK_CHANNEL")
-    if not (token and channel):
-        raise RuntimeError("Missing Slack env vars.")
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.post(
-            "https://slack.com/api/chat.postMessage",
-            headers={"Authorization": f"Bearer {token}",
-                     "Content-Type": "application/json; charset=utf-8"},
-            json={"channel": channel, "text": text},
-        )
-        r.raise_for_status()
-        data = r.json()
-        if not data.get("ok"):
-            raise RuntimeError(f"Slack API error: {data}")
 
 def job_to_blocks(job, score: float | None = None):
     line2 = f"{job.location}  ·  _{job.source}_"
@@ -41,12 +25,18 @@ def job_to_blocks(job, score: float | None = None):
     if meta:
         detail_lines.append(" • ".join(meta))
 
-    text = f"*<{job.url}|{job.title}>*  ·  {job.company}\n" + "\n".join(detail_lines)
+    header = f"*<{job.url}|{job.title}>*  ·  {job.company}"
+    text = header + "\n" + "\n".join(detail_lines)
     return [
         {"type": "section", "text": {"type": "mrkdwn", "text": text}}
     ]
 
-async def post_blocks(blocks: List[Dict], text: str = "New jobs", channel_override: str | None = None):
+
+async def post_blocks(
+    blocks: List[Dict],
+    text: str = "New jobs",
+    channel_override: str | None = None,
+):
     token = os.environ.get("GOBLIN_SLACK_BOT_TOKEN")
     channel = channel_override or os.environ.get("GOBLIN_SLACK_CHANNEL")
     if not (token and channel):
@@ -54,9 +44,15 @@ async def post_blocks(blocks: List[Dict], text: str = "New jobs", channel_overri
     async with httpx.AsyncClient(timeout=10) as client:
         r = await client.post(
             "https://slack.com/api/chat.postMessage",
-            headers={"Authorization": f"Bearer {token}",
-                     "Content-Type": "application/json; charset=utf-8"},
-            json={"channel": channel, "text": text, "blocks": blocks},
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json; charset=utf-8",
+            },
+            json={
+                "channel": channel,
+                "text": text,
+                "blocks": blocks,
+            },
         )
         r.raise_for_status()
         data = r.json()

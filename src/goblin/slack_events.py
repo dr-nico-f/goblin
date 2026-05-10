@@ -62,21 +62,20 @@ def lambda_handler(event, _context):
         except (binascii.Error, UnicodeDecodeError, ValueError):
             return {"statusCode": 400, "body": "Failed to decode body"}
 
-    # Slack URL verification (events API)
-    try:
-        payload = json.loads(body)
-        if payload.get("type") == "url_verification":
-            return {"statusCode": 200, "body": payload.get("challenge", "")}
-    except json.JSONDecodeError:
-        # Not JSON; likely a slash command (form-encoded)
-        pass
-
     signing_secret = os.environ.get("SLACK_SIGNING_SECRET")
     if not signing_secret:
         return {"statusCode": 500, "body": "Missing SLACK_SIGNING_SECRET"}
 
     if not _verify_signature(headers, body, signing_secret):
         return {"statusCode": 401, "body": "Signature verification failed"}
+
+    # URL verification (events API) — after signature check
+    try:
+        payload = json.loads(body)
+        if payload.get("type") == "url_verification":
+            return {"statusCode": 200, "body": payload.get("challenge", "")}
+    except json.JSONDecodeError:
+        pass
 
     # Slash command path (form-encoded)
     content_type = (

@@ -1,5 +1,5 @@
 titles:
-  include: ["Engineer", "Developer", "Software", "Data", "DevOps", "ML", "Integration", "Integrations", "Backend", "Python", "AI", "Senior", "Architect", "Solutions", "Solution", "Technical"]
+  include: ["Engineer", "Developer", "Software", "Data", "DevOps", "ML", "Integration", "Backend", "Python", "AI", "Senior", "Architect", "Solutions", "Technical"]
   exclude: ["Intern", "Junior"]
 
 keywords:
@@ -10,13 +10,10 @@ keywords:
     - ai
     - ml
     - integration
-    - integrations
     - backend
-    - python
     - senior
     - architect
     - solutions
-    - solution
     - technical
     - developer
     - engineer
@@ -40,5 +37,5 @@ locations:
     - Europe
 
 salary:
-  min: 150000
+  min: 100000            # adjust to your preference
   allow_missing: false
