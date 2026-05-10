@@ -205,7 +205,3 @@ Goblin runs serverlessly on **AWS Lambda** with scheduling via **EventBridge**.
 ## 📜 License
 MIT © 2025–2026 — Goblin Labs  
 Created by [Nico](https://github.com/dr-nico-f)
-
----
-
-> 🧙 *“A good bot posts once. A great bot never reposts.”*
