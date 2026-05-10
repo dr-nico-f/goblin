@@ -4,6 +4,8 @@
 Goblin fetches new remote job listings, filters and ranks them by your criteria, and posts the best matches directly to Slack.  
 Built with **Python 3.10+**, **AWS**, and the **Slack API**.
 
+![Goblin posting scored job matches to Slack](docs/slack-demo.png)
+
 ---
 
 ## 💡 Why I Built This
