@@ -87,8 +87,12 @@ def salary_filters(basic_filters):
 def default_weights():
     return {
         "keyword_hit": 1.0,
-        "title_match": 0.8,
+        "title_hit": 0.3,
+        "description_hit": 0.3,
+        "tag_hit": 0.2,
         "remote_bonus": 0.5,
+        "salary_bonus": 0.1,
+        "recency_bonus": 0.4,
         "senior_penalty": -0.6,
         "intern_penalty": -1.0,
     }

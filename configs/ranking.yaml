@@ -1,6 +1,10 @@
 weights:
-  keyword_hit: 1.0       # + per keyword.include match
-  title_match: 0.8       # + if any titles.include hits
+  keyword_hit: 1.0       # + per keyword.include match in title+company
+  title_hit: 0.3         # + per titles.include term found in title
+  description_hit: 0.3   # + per keyword.include match in job description
+  tag_hit: 0.2           # + per job tag that overlaps with keyword.include
   remote_bonus: 0.5      # + if location looks remote
+  salary_bonus: 0.1      # + per $10k above salary.min (capped at 5 tiers)
+  recency_bonus: 0.4     # + if published within the last 7 days
   senior_penalty: -0.6   # - if title contains "Staff" or "Principal"
   intern_penalty: -1.0   # - if title contains "Intern"

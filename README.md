@@ -22,7 +22,7 @@ Now it runs on a schedule, supports multiple profiles, and is fully controllable
 ## 🚀 Features
 - Live job fetching from [Remotive](https://remotive.com/api/remote-jobs)
 - Keyword, title, and location filters via YAML configs
-- Ranking system with customizable weights
+- Multi-signal ranking (keywords, title, description, tags, salary, recency)
 - Deduplication to prevent reposts
 - Rotating log files for all runs
 - `.env`-based secrets loading (no manual exports)
@@ -162,7 +162,9 @@ Filters can be stored remotely in DynamoDB when `GOBLIN_FILTERS_TABLE` is set. E
 - `GOBLIN_FILTERS_PK`: partition key name (default: `profile`)
 
 ### Ranking (`configs/ranking.yaml`)
-Adjust the weight of keyword hits, title matches, remote bonuses, and penalties.
+Adjust scoring weights across multiple signals: keyword hits (title/company and description),
+title term matches, tag overlap, remote bonus, salary above minimum, recency of posting,
+and seniority penalties. Jobs are scored on all dimensions for differentiated rankings.
 
 ### Sources (`configs/sources.yaml`)
 Enable or disable job sources and set default categories, limits, and queries.
@@ -182,7 +184,7 @@ pytest
 
 The test suite covers filtering logic, salary parsing, scoring/ranking, deduplication,
 Slack block rendering, signature verification, command routing, profile resolution,
-config loading, and schedule normalization — **162 tests**.
+config loading, and schedule normalization — **178 tests**.
 
 ---
 
