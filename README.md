@@ -8,7 +8,7 @@ Built with **Python 3.10+**, **AWS**, and the **Slack API**.
 
 ---
 
-## 💡 Why I Built This
+## 💡 Motivation
 I got tired of manually checking job boards every day, scanning the same listings, and losing track of what I'd already seen.
 So I built a bot to do it for me — fetch listings, filter out the noise, rank what's left, and drop the best matches into Slack where I'd actually see them.
 
